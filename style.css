@@ -102,13 +102,13 @@ button.logo-button {
   min-height: 0;
   padding: 0;
   border: 0;
-  border-radius: 1.45rem;
+  border-radius: 1.15rem;
   overflow: hidden;
-  background: transparent;
+  background: #ff6600;
   line-height: 0;
 }
 
-button.logo-button:hover { background: transparent; }
+button.logo-button:hover { background: #ff6600; }
 
 .logo {
   display: block;
@@ -293,7 +293,7 @@ input.scan-input {
   button:hover { background: #e65c00; }
   button[aria-pressed="false"]:hover,
   button.quiet:hover { background: #fff3eb; }
-  button.logo-button:hover { background: transparent; }
+  button.logo-button:hover { background: #ff6600; }
 }
 
 @media (max-width: 359px) {
