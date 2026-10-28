@@ -647,23 +647,6 @@ function applyLogo() {
   }
 }
 
-function renderLoadQr() {
-  var box = document.querySelector("#laden-qr");
-  if (!box || typeof qrcode !== "function") return;
-  qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
-  var url = store.shop().website;
-  var code = qrcode(0, "H");
-  code.addData(url);
-  code.make();
-  box.innerHTML = code.createSvgTag({
-    cellSize: 4,
-    margin: 2,
-    scalable: true,
-    title: "Schmahl GmbH",
-  });
-  box.append(el("p", { class: "url-line" }, el("a", { href: url }, "www.gartentechnik-koblenz.de")));
-}
-
 var deferredInstall = null;
 
 function installedApp() {
@@ -756,7 +739,6 @@ function start() {
     setEingang("kunde");
     loadLocalCustomer();
   });
-  renderLoadQr();
   bindInstallAsk();
   try {
     var shop = store.shop();

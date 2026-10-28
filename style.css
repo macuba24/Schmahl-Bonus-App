@@ -146,28 +146,6 @@ button.logo-button:hover { background: #f27b20; }
 
 .shop-lines a { text-decoration: none; }
 
-.laden-qr {
-  max-width: 11rem;
-  margin: 0.7rem 0 0.3rem;
-}
-
-.laden-qr svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #fff;
-}
-
-.laden-qr .url-line {
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 0.8rem;
-  word-break: break-all;
-}
-
-.laden-qr .url-line a {
-  color: inherit;
-}
-
 .switch {
   position: fixed;
   z-index: 3;
