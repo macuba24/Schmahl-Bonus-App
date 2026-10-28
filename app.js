@@ -628,7 +628,7 @@ function renderLoadQr() {
   var box = document.querySelector("#laden-qr");
   if (!box || typeof qrcode !== "function") return;
   qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
-  var url = new URL("./", window.location.href).href;
+  var url = store.shop().website;
   var code = qrcode(0, "H");
   code.addData(url);
   code.make();
@@ -636,9 +636,9 @@ function renderLoadQr() {
     cellSize: 4,
     margin: 2,
     scalable: true,
-    title: "Kundenkarte Schmahl laden",
+    title: "Schmahl GmbH",
   });
-  box.append(el("p", { class: "url-line" }, url));
+  box.append(el("p", { class: "url-line" }, el("a", { href: url }, "www.gartentechnik-koblenz.de")));
 }
 
 function start() {

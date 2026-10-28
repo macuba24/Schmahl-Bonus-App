@@ -15,6 +15,7 @@ var Schmahl = (function () {
     city: "Koblenz",
     phone: "0261 / 30488-0",
     phoneHref: "tel:+49261304880",
+    website: "https://www.gartentechnik-koblenz.de/",
     hours: ["Mo.–Fr. 7.30–17.00 Uhr", "Samstags geschlossen"],
   };
   var RATES = { 100000: 1, 300000: 2, 500000: 3, 1000000: 5 };
@@ -347,6 +348,7 @@ var Schmahl = (function () {
           city: SHOP.city,
           phone: SHOP.phone,
           phoneHref: SHOP.phoneHref,
+          website: SHOP.website,
           hours: SHOP.hours.slice(),
           tiers: benefitRows(state),
           month: monthJson(state, when),
