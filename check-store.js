@@ -55,7 +55,10 @@ var second = store.book("K-12", "700");
 assert(second.card.turnoverCents === 110000, "Buchung über die Kundennummer");
 assert(second.card.reachedTierCents === 100000, "Stufe 1000");
 assert(second.card.benefits[0].reached === true, "Vorteil erreicht");
-assert(second.card.benefits[0].text.indexOf("Sichtprüfung") === 0, "Satz");
+assert(second.card.benefits[0].text.indexOf("1 Prozent") === 0, "Satz");
+assert(second.card.bonusPercent === 1, "1 Prozent");
+assert(second.card.bonusCents === 1100, "11 Euro Bonus");
+assert(first.card.bonusCents === 0, "vor der Stufe kein Bonus");
 assert(second.month.turnoverCents === 110000, "Monat");
 assert(second.month.feeCents === 2200, "22 Euro");
 

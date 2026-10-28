@@ -17,11 +17,12 @@ var Schmahl = (function () {
     phoneHref: "tel:+49261304880",
     hours: ["Mo.–Fr. 7.30–17.00 Uhr", "Samstags geschlossen"],
   };
+  var RATES = { 100000: 1, 300000: 2, 500000: 3, 1000000: 5 };
   var DEFAULT_BENEFITS = {
-    100000: "Sichtprüfung eines Geräts",
-    300000: "Vorteil auf Verschleißteile, den der Laden an der Kasse nennt",
-    500000: "kostenlose Abholung eines Geräts zur Inspektion im Ortsgebiet",
-    1000000: "ein Service im Jahr, den der Laden an der Kasse festlegt",
+    100000: "1 Prozent auf den Einkauf",
+    300000: "2 Prozent auf den Einkauf",
+    500000: "3 Prozent auf den Einkauf",
+    1000000: "5 Prozent auf den Einkauf und eine Arbeitshose",
   };
 
   function StoreError(message) {
@@ -52,9 +53,23 @@ var Schmahl = (function () {
     return String(euros).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " Euro";
   }
 
-  function twoPercentCents(amountCents) {
+  function percentCents(amountCents, percent) {
     var n = Math.trunc(Number(amountCents));
-    return Math.floor((n * 2 + 50) / 100);
+    var rate = Math.trunc(Number(percent));
+    if (n <= 0 || rate <= 0) return 0;
+    return Math.floor((n * rate + 50) / 100);
+  }
+
+  function twoPercentCents(amountCents) {
+    return percentCents(amountCents, 2);
+  }
+
+  function bonusOf(turnover) {
+    var percent = 0;
+    TIERS.forEach(function (tier) {
+      if (turnover >= tier) percent = RATES[tier];
+    });
+    return { percent: percent, cents: percentCents(turnover, percent) };
   }
 
   function berlinNow(date) {
@@ -232,12 +247,18 @@ var Schmahl = (function () {
 
     function benefitRows(state) {
       return TIERS.map(function (tier) {
-        return { tierCents: tier, label: euroLabel(tier), text: state.benefits[String(tier)] };
+        return {
+          tierCents: tier,
+          label: euroLabel(tier),
+          percent: RATES[tier],
+          text: state.benefits[String(tier)],
+        };
       });
     }
 
     function card(state, customer, when) {
       var turnover = yearTurnover(customer, when.year);
+      var bonus = bonusOf(turnover);
       var reached = null;
       var next = null;
       TIERS.forEach(function (tier) {
@@ -259,6 +280,8 @@ var Schmahl = (function () {
         reachedTierCents: reached,
         nextTierCents: next,
         remainingCents: next == null ? null : next - turnover,
+        bonusPercent: bonus.percent,
+        bonusCents: bonus.cents,
         benefits: benefitRows(state).map(function (item) {
           return {
             tierCents: item.tierCents,
@@ -308,7 +331,7 @@ var Schmahl = (function () {
         for (i = 0; i < 8; i += 1) kode += ALPHABET[bytes[i] % ALPHABET.length];
         if (!taken[kode]) return kode;
       }
-      fail("Gerade lässt sich kein Kundenkode erzeugen. Bitte noch einmal.");
+      fail("Gerade lässt sich kein Kunden-Code erzeugen. Bitte noch einmal.");
     }
 
     return {
@@ -438,6 +461,7 @@ var Schmahl = (function () {
   return {
     createStore: createStore,
     twoPercentCents: twoPercentCents,
+    percentCents: percentCents,
     parseCents: parseCents,
     SHOP: SHOP,
     DEFAULT_BENEFITS: DEFAULT_BENEFITS,

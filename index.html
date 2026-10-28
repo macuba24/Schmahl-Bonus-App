@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Schmahl">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Kundenkarte Schmahl</title>
   <link rel="icon" href="logo.png" type="image/png">
   <link rel="apple-touch-icon" href="logo.png">
@@ -21,8 +22,6 @@
         <span id="wordmark" class="wordmark">Schmahl</span>
       </button>
       <p class="role">Kundenkarte</p>
-      <div id="shop-lines" class="shop-lines"></div>
-      <p class="hint"><a href="prospekt.html">Prospekt mit dem Ladezeichen</a></p>
     </header>
     <nav class="switch" aria-label="Eingang">
       <button type="button" id="tab-kunde" aria-pressed="true">Kunde</button>
@@ -37,7 +36,11 @@
         <h2>Kasse</h2>
       </section>
     </div>
+    <div id="shop-lines" class="shop-lines"></div>
+    <div id="laden-qr" class="laden-qr"></div>
+    <p class="hint"><a href="prospekt.html">Prospekt mit dem Ladezeichen</a></p>
   </main>
+  <script src="vendor/qrcode.js"></script>
   <script src="store.js"></script>
   <script src="app.js"></script>
 </body>

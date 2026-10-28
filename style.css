@@ -17,16 +17,22 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--black);
   color: var(--ink);
   font-family: "Segoe UI", "Helvetica Neue", sans-serif;
   line-height: 1.45;
 }
 
 main {
-  max-width: 40rem;
+  max-width: 28rem;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 1.15rem 1rem 3rem;
+  background: var(--paper);
+  padding:
+    calc(0.85rem + env(safe-area-inset-top))
+    1rem
+    calc(7.4rem + env(safe-area-inset-bottom));
 }
 
 h1, h2, h3 { font-weight: 650; line-height: 1.2; }
@@ -37,9 +43,10 @@ p { margin: 0.35rem 0; }
 
 a { color: inherit; }
 
-button, input, textarea {
+button, input, textarea, label.scan-button {
   font: inherit;
   color: inherit;
+  touch-action: manipulation;
 }
 
 button {
@@ -73,7 +80,7 @@ input, textarea {
 
 textarea { min-height: 4.6rem; resize: vertical; }
 
-label { display: block; margin-top: 0.85rem; font-weight: 650; }
+label { display: block; margin-top: 0.45rem; font-weight: 650; }
 
 :focus-visible {
   outline: 2px solid var(--orange);
@@ -90,8 +97,8 @@ label { display: block; margin-top: 0.85rem; font-weight: 650; }
 }
 
 button.logo-button {
-  width: 6.6rem;
-  height: 6.6rem;
+  width: 5.2rem;
+  height: 5.2rem;
   min-height: 0;
   padding: 0;
   border: 0;
@@ -115,23 +122,54 @@ button.logo-button:hover { background: transparent; }
 
 .role {
   margin: 0.25rem 0 0.7rem;
-  color: var(--muted);
+  color: var(--ink);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
-.shop-lines p { margin: 0.12rem 0; }
+.shop-lines { font-size: 0.9rem; }
+.shop-lines p { margin: 0.08rem 0; }
 
 .shop-lines a { text-decoration: none; }
 
+.laden-qr {
+  max-width: 11rem;
+  margin: 0.7rem 0 0.3rem;
+}
+
+.laden-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+
+.laden-qr .url-line {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
 .switch {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(100%, 28rem);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
-  margin: 1.1rem 0 0.4rem;
+  margin: 0;
+  padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+  background: var(--paper);
+  border-top: 1px solid var(--line);
 }
 
 section {
-  margin-top: 1.1rem;
-  padding-top: 1rem;
+  margin-top: 0.45rem;
+  padding-top: 0.7rem;
   border-top: 1px solid var(--line);
 }
 
@@ -177,6 +215,19 @@ body[data-eingang="kasse"] #kunde { display: none; }
 }
 
 .benefit.redeemed { border-left-color: #b7b0a4; }
+
+.steps { display: grid; gap: 0.45rem; margin: 0.2rem 0 1rem; }
+
+.step {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid #b7b0a4;
+  padding: 0.7rem 0.85rem;
+}
+
+.step.reached { border-left-color: var(--orange); }
+.step.current { background: #fff3eb; }
+.step .step-rate { font-weight: 700; margin: 0.1rem 0; }
 
 .benefit p { margin: 0.15rem 0; }
 
@@ -247,24 +298,4 @@ input.scan-input {
 
 @media (max-width: 359px) {
   .number { letter-spacing: 0.06em; }
-}
-
-@media (min-width: 860px) {
-  body { background: var(--black); }
-  main {
-    max-width: 72rem;
-    min-height: 100vh;
-    padding: 2rem 1.6rem 3.5rem;
-    background: var(--paper);
-    box-shadow: 0 0 0 1px rgba(28, 25, 21, 0.05);
-  }
-  body[data-eingang="kunde"] #kasse,
-  body[data-eingang="kasse"] #kunde { display: block; }
-  .panels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.8rem;
-    align-items: start;
-  }
-  section { margin-top: 0.4rem; }
 }

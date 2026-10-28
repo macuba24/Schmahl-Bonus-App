@@ -29,6 +29,8 @@ var kunde = document.querySelector("#kunde");
 var kasse = document.querySelector("#kasse");
 var shopLines = document.querySelector("#shop-lines");
 var store = Schmahl.createStore(localStorage);
+var pendingReceipt = "";
+var pendingMessage = "";
 var kasseNumber = "";
 var benefitFields = [];
 var monthTurnoverNode = null;
@@ -111,7 +113,7 @@ function barcodeSvg(text) {
   var svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", "0 0 " + width + " " + height);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", "Barcode des Kundenkodes " + text);
+  svg.setAttribute("aria-label", "Barcode des Kunden-Codes " + text);
   var background = document.createElementNS(SVG_NS, "rect");
   background.setAttribute("width", String(width));
   background.setAttribute("height", String(height));
@@ -207,10 +209,13 @@ function cardNodes(card, onRedeem) {
     card.address ? el("p", {}, card.address) : null,
     el("p", { class: "tier-label" }, "Kundennummer"),
     el("p", { class: "number", translate: "no" }, card.kundennummer || "—"),
-    el("p", { class: "tier-label" }, "Kundenkode"),
+    el("p", { class: "tier-label" }, "Kunden-Code"),
     el("p", { class: "number", translate: "no" }, card.kode || card.number),
     box,
-    el("p", { class: "hint" }, "Diesen Kode an der Kasse zeigen. Falls sie nicht scannt, den Kode nennen."),
+    el("p", { class: "hint" }, "Diesen Kunden-Code an der Kasse zeigen. Falls sie nicht scannt, den Code nennen."),
+    el("p", {}, card.bonusCents
+      ? "Bonus " + card.bonusPercent + " Prozent: " + euro(card.bonusCents) + "."
+      : "Bonus ab 1.000 Euro: 1 Prozent auf den Einkauf."),
     el("p", { class: "tier-label" }, "Jahresumsatz " + card.year),
     el("p", { class: "figure" }, euro(card.turnoverCents)),
     el("p", {}, tierSentence(card)),
@@ -224,10 +229,32 @@ function receiptView(card) {
   return el("img", { class: "shot", alt: "Gescannte Rechnung", src: card.receipt.jpeg });
 }
 
-function scanSection(card) {
+function readReceipt(file, onJpeg, note) {
+  note.textContent = "";
+  note.className = "";
+  var image = new Image();
+  var url = URL.createObjectURL(file);
+  image.onload = function () {
+    URL.revokeObjectURL(url);
+    var canvas = document.createElement("canvas");
+    var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    onJpeg(canvas.toDataURL("image/jpeg", 0.72));
+  };
+  image.onerror = function () {
+    URL.revokeObjectURL(url);
+    note.className = "error";
+    note.textContent = "Die Rechnung ließ sich nicht lesen.";
+  };
+  image.src = url;
+}
+
+function scanPicker(id, preview, onJpeg) {
   var note = el("p", { role: "status" });
   var input = el("input", {
-    id: "rechnung-scan",
+    id: id,
     class: "scan-input",
     type: "file",
     accept: "image/*",
@@ -237,37 +264,26 @@ function scanSection(card) {
     var file = input.files && input.files[0];
     input.value = "";
     if (!file) return;
-    note.textContent = "";
-    note.className = "";
-    var image = new Image();
-    var url = URL.createObjectURL(file);
-    image.onload = function () {
-      URL.revokeObjectURL(url);
-      var canvas = document.createElement("canvas");
-      var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
-      canvas.width = Math.max(1, Math.round(image.width * scale));
-      canvas.height = Math.max(1, Math.round(image.height * scale));
-      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-      var updated = act(note, null, function () {
-        return store.saveReceipt(card.number, canvas.toDataURL("image/jpeg", 0.72));
-      });
-      if (updated) publishCard(updated);
-    };
-    image.onerror = function () {
-      URL.revokeObjectURL(url);
-      note.className = "error";
-      note.textContent = "Die Rechnung ließ sich nicht lesen.";
-    };
-    image.src = url;
+    readReceipt(file, onJpeg, note);
   });
   return el("div", { class: "scan" }, [
     el("h3", {}, "Rechnung"),
     el("p", { class: "hint" }, "Die Kamera nimmt den Bon auf. Der Betrag zählt, wenn die Kasse ihn bucht."),
-    receiptView(card),
-    el("label", { class: "scan-button", for: "rechnung-scan" }, "Rechnung scannen"),
+    preview,
+    el("label", { class: "scan-button", for: id }, "Rechnung scannen"),
     input,
     note,
   ]);
+}
+
+function scanSection(card) {
+  var preview = el("div");
+  if (card.receipt && card.receipt.jpeg) preview.append(receiptView(card));
+  return scanPicker("rechnung-scan", preview, function (jpeg) {
+    var note = preview.parentNode.querySelector("[role='status']");
+    var updated = act(note, null, function () { return store.saveReceipt(card.number, jpeg); });
+    if (updated) publishCard(updated);
+  });
 }
 
 function messageSection(card, sender) {
@@ -305,11 +321,41 @@ function messageSection(card, sender) {
   ]);
 }
 
+function draftMessage() {
+  var note = el("p", { role: "status" });
+  var area = el("textarea", {
+    id: "nachricht-neu",
+    maxlength: "1000",
+    "aria-label": "Nachricht an die Firma",
+    placeholder: "Nachricht an die Firma",
+  });
+  area.value = pendingMessage;
+  area.addEventListener("input", function () { pendingMessage = area.value; });
+  var button = el("button", { type: "button" }, "An die Firma schreiben");
+  button.addEventListener("click", function () {
+    pendingMessage = area.value;
+    if (!String(area.value || "").trim()) {
+      note.className = "error";
+      note.textContent = "Bitte eine Nachricht schreiben.";
+      return;
+    }
+    note.className = "ok";
+    note.textContent = "Gespeichert. Die Nachricht geht mit dem Kunden-Code an die Firma.";
+  });
+  return el("div", { class: "mail" }, [
+    el("h3", {}, "Schreiben"),
+    el("p", { class: "hint" }, "Hier schreibst du der Firma."),
+    area,
+    button,
+    note,
+  ]);
+}
+
 function renderCustomer(card) {
   kunde.replaceChildren(el("h2", {}, "Kunde"));
+  kunde.append(messageSection(card, "kunde"));
   cardNodes(card, null).forEach(function (node) { kunde.append(node); });
   kunde.append(scanSection(card));
-  kunde.append(messageSection(card, "kunde"));
 }
 
 function renderNameForm(message) {
@@ -337,7 +383,7 @@ function renderNameForm(message) {
     "aria-label": "Kundennummer",
   });
   var note = el("p", { class: "error", role: "alert" }, message || "");
-  var button = el("button", { type: "submit" }, "Kundenkode erzeugen");
+  var button = el("button", { type: "submit" }, "Kunden-Code erzeugen");
   var form = el("form", {
     class: "stack",
     onsubmit: function (event) {
@@ -349,7 +395,26 @@ function renderNameForm(message) {
           kundennummer: numberInput.value,
         });
       });
-      if (created) renderCustomer(created);
+      if (!created) return;
+      if (pendingReceipt) {
+        try {
+          created = store.saveReceipt(created.number, pendingReceipt);
+        } catch (error) {
+          note.className = "error";
+          note.textContent = error.message;
+        }
+        pendingReceipt = "";
+      }
+      if (String(pendingMessage || "").trim()) {
+        try {
+          created = store.postMessage(created.number, pendingMessage, "kunde");
+          pendingMessage = "";
+        } catch (error) {
+          note.className = "error";
+          note.textContent = error.message;
+        }
+      }
+      renderCustomer(created);
     },
   }, [
     el("label", { for: "customer-name" }, "Name"),
@@ -358,11 +423,21 @@ function renderNameForm(message) {
     addressInput,
     el("label", { for: "customer-number-given" }, "Kundennummer"),
     numberInput,
-    el("p", { class: "hint" }, "Danach entsteht der Kundenkode. Er bleibt auf diesem Handy."),
+    el("p", { class: "hint" }, "Danach entsteht der Kunden-Code. Er bleibt auf diesem Handy."),
     button,
     note,
   ]);
-  kunde.replaceChildren(el("h2", {}, "Kunde"), form);
+  var preview = el("div");
+  if (pendingReceipt) preview.append(el("img", { class: "shot", alt: "Gescannte Rechnung", src: pendingReceipt }));
+  kunde.replaceChildren(
+    el("h2", {}, "Kunde"),
+    form,
+    scanPicker("rechnung-neu", preview, function (jpeg) {
+      pendingReceipt = jpeg;
+      preview.replaceChildren(el("img", { class: "shot", alt: "Gescannte Rechnung", src: jpeg }));
+    }),
+    draftMessage()
+  );
 }
 
 function renderKasseCard(card) {
@@ -428,7 +503,7 @@ function buildKasse(shop) {
     autocomplete: "off",
     autocapitalize: "characters",
     spellcheck: "false",
-    "aria-label": "Kundenkode oder Kundennummer",
+    "aria-label": "Kunden-Code oder Kundennummer",
   });
   numberInput.addEventListener("input", function () {
     var next = cleanNumber(numberInput.value);
@@ -468,7 +543,7 @@ function buildKasse(shop) {
       showOnKasse(result.card);
     },
   }, [
-    el("label", { for: "kasse-nummer" }, "Kundenkode oder Kundennummer"),
+    el("label", { for: "kasse-nummer" }, "Kunden-Code oder Kundennummer"),
     numberInput,
     showButton,
     el("label", { for: "kasse-betrag" }, "Gezahlter Betrag in Euro"),
@@ -549,6 +624,23 @@ function applyLogo() {
   }
 }
 
+function renderLoadQr() {
+  var box = document.querySelector("#laden-qr");
+  if (!box || typeof qrcode !== "function") return;
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+  var url = new URL("./", window.location.href).href;
+  var code = qrcode(0, "H");
+  code.addData(url);
+  code.make();
+  box.innerHTML = code.createSvgTag({
+    cellSize: 4,
+    margin: 2,
+    scalable: true,
+    title: "Kundenkarte Schmahl laden",
+  });
+  box.append(el("p", { class: "url-line" }, url));
+}
+
 function start() {
   checkBarcode();
   document.querySelector("#tab-kunde").addEventListener("click", function () {
@@ -564,6 +656,7 @@ function start() {
     setEingang("kunde");
     loadLocalCustomer();
   });
+  renderLoadQr();
   try {
     var shop = store.shop();
     document.title = "Kundenkarte " + shop.wordmark;
