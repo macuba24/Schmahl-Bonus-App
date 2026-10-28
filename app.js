@@ -173,6 +173,32 @@ function act(note, button, work) {
   }
 }
 
+function bonusList(card, onRedeem) {
+  return el("div", { class: "steps" }, card.benefits.map(function (item) {
+    var current = item.tierCents === card.reachedTierCents;
+    var cls = "step" + (item.reached ? " reached" : "") + (current ? " current" : "");
+    var button = onRedeem && item.reached && !item.redeemed
+      ? el("button", { type: "button", class: "quiet" }, "Als eingelöst markieren")
+      : null;
+    if (button) button.addEventListener("click", function () { onRedeem(item, button); });
+    return el("article", { class: cls }, [
+      el("p", { class: "tier-label" }, "ab " + item.label),
+      el("p", { class: "step-rate" }, item.text),
+      item.reached ? el("p", { class: "hint" }, item.redeemed ? "Eingelöst." : "Erreicht.") : null,
+      button,
+    ]);
+  }));
+}
+
+function openBonusList() {
+  return el("div", { class: "steps" }, store.shop().tiers.map(function (item) {
+    return el("article", { class: "step" }, [
+      el("p", { class: "tier-label" }, "ab " + item.label),
+      el("p", { class: "step-rate" }, item.text),
+    ]);
+  }));
+}
+
 function tierSentence(card) {
   if (!card.reachedTierCents) return "Stufe noch nicht erreicht.";
   var tier = card.benefits.find(function (item) { return item.tierCents === card.reachedTierCents; });
@@ -182,23 +208,6 @@ function tierSentence(card) {
 function nextSentence(card) {
   if (card.nextTierCents == null) return "Die höchste Stufe ist erreicht.";
   return "Noch " + euroWords(card.remainingCents) + " bis zur nächsten Stufe.";
-}
-
-function benefitNodes(card, onRedeem) {
-  var reached = card.benefits.filter(function (item) { return item.reached; });
-  if (!reached.length) return [el("p", {}, "Noch kein Vorteil in diesem Jahr.")];
-  return reached.map(function (item) {
-    var button = onRedeem && !item.redeemed
-      ? el("button", { type: "button", class: "quiet" }, item.label + " als eingelöst markieren")
-      : null;
-    if (button) button.addEventListener("click", function () { onRedeem(item, button); });
-    return el("article", { class: item.redeemed ? "benefit redeemed" : "benefit" }, [
-      el("p", { class: "tier-label" }, item.label),
-      el("p", {}, item.text),
-      el("p", {}, item.redeemed ? "Eingelöst." : "Offen."),
-      button,
-    ]);
-  });
 }
 
 function cardNodes(card, onRedeem) {
@@ -220,8 +229,8 @@ function cardNodes(card, onRedeem) {
     el("p", { class: "figure" }, euro(card.turnoverCents)),
     el("p", {}, tierSentence(card)),
     el("p", {}, nextSentence(card)),
-    el("h3", {}, "Vorteil"),
-  ].concat(benefitNodes(card, onRedeem));
+    el("h3", {}, "Bonusstufen"),
+  ].concat([bonusList(card, onRedeem)]);
 }
 
 function receiptArchive(items) {
@@ -443,6 +452,8 @@ function renderNameForm(message) {
   preview.append(receiptArchive(pendingReceipts));
   kunde.replaceChildren(
     el("h2", {}, "Kunde"),
+    el("h3", {}, "Bonusstufen"),
+    openBonusList(),
     form,
     scanPicker("rechnung-neu", preview, function (jpeg) {
       pendingReceipts.push({ jpeg: jpeg });
