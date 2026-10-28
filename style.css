@@ -87,6 +87,20 @@ label { display: block; margin-top: 0.45rem; font-weight: 650; }
   outline-offset: 2px;
 }
 
+.top {
+  margin-left: -1rem;
+  margin-right: -1rem;
+  text-align: center;
+}
+
+.logo-band {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  background: linear-gradient(to bottom, #f17d27 0 21%, #161616 21% 79%, #e76a11 79% 100%);
+}
+
 .wordmark {
   margin: 0;
   font-family: Georgia, "Palatino Linotype", Palatino, serif;
@@ -121,11 +135,12 @@ button.logo-button:hover { background: #ff6600; }
 [hidden] { display: none !important; }
 
 .role {
-  margin: 0.25rem 0 0.7rem;
+  margin: 0.45rem 1rem 0.7rem;
   color: var(--ink);
   font-size: 2rem;
   font-weight: 700;
   line-height: 1.1;
+  text-align: center;
 }
 
 .shop-lines { font-size: 0.9rem; }
