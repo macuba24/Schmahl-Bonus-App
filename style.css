@@ -94,11 +94,9 @@ label { display: block; margin-top: 0.45rem; font-weight: 650; }
 }
 
 .logo-band {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: block;
   width: 100%;
-  background: linear-gradient(to bottom, #f17d27 0 21%, #161616 21% 79%, #e76a11 79% 100%);
+  background: #f27b20;
 }
 
 .wordmark {
@@ -111,24 +109,24 @@ label { display: block; margin-top: 0.45rem; font-weight: 650; }
 }
 
 button.logo-button {
-  width: 5.2rem;
-  height: 5.2rem;
+  width: 100%;
+  height: auto;
   min-height: 0;
   padding: 0;
   border: 0;
-  border-radius: 1.15rem;
+  border-radius: 0;
   overflow: hidden;
-  background: #ff6600;
+  background: #f27b20;
   line-height: 0;
 }
 
-button.logo-button:hover { background: #ff6600; }
+button.logo-button:hover { background: #f27b20; }
 
 .logo {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
 }
 
 .logo[hidden],
@@ -308,7 +306,7 @@ input.scan-input {
   button:hover { background: #e65c00; }
   button[aria-pressed="false"]:hover,
   button.quiet:hover { background: #fff3eb; }
-  button.logo-button:hover { background: #ff6600; }
+  button.logo-button:hover { background: #f27b20; }
 }
 
 @media (max-width: 359px) {
