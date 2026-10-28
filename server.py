@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 from zoneinfo import ZoneInfo
 
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 8765
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
@@ -865,6 +865,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if self.command == "GET" and parsed.path == "/style.css":
                 self._file("style.css", "text/css; charset=utf-8")
+                return
+            if self.command == "GET" and parsed.path == "/manifest.json":
+                self._file("manifest.json", "application/manifest+json")
                 return
             if self.command == "GET" and parsed.path == "/logo.png":
                 logo = STATIC / "logo.png"

@@ -213,14 +213,18 @@ function benefitNodes(card, onRedeem) {
 }
 
 function cardNodes(card, onRedeem) {
+  const kode = card.kode || card.number;
   const box = el("div", { class: "barcode" });
-  box.append(barcodeSvg(card.number));
+  box.append(barcodeSvg(kode));
   return [
     el("h3", {}, card.name),
+    card.address ? el("p", {}, card.address) : null,
     el("p", { class: "tier-label" }, "Kundennummer"),
-    el("p", { class: "number", translate: "no" }, card.number),
+    el("p", { class: "number", translate: "no" }, card.kundennummer || "—"),
+    el("p", { class: "tier-label" }, "Kundenkode"),
+    el("p", { class: "number", translate: "no" }, kode),
     box,
-    el("p", { class: "hint" }, "Falls die Kasse nicht scannt, diese Nummer nennen."),
+    el("p", { class: "hint" }, "Diesen Kode an der Kasse zeigen. Falls sie nicht scannt, den Kode nennen."),
     el("p", { class: "tier-label" }, "Jahresumsatz " + card.year),
     el("p", { class: "figure" }, euro(card.turnoverCents)),
     el("p", {}, tierSentence(card)),
@@ -229,10 +233,68 @@ function cardNodes(card, onRedeem) {
   ].concat(benefitNodes(card, onRedeem));
 }
 
+function receiptView(card) {
+  if (!card.receipt) return el("p", { class: "hint" }, "Noch keine Rechnung gescannt.");
+  return el("img", {
+    class: "shot",
+    alt: "Gescannte Rechnung",
+    src: "/api/rechnung/" + card.receipt.id,
+  });
+}
+
+function scanSection(card) {
+  const note = el("p", { role: "status" });
+  const input = el("input", {
+    id: "rechnung-scan",
+    class: "scan-input",
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+  });
+  input.addEventListener("change", function () {
+    const file = input.files && input.files[0];
+    input.value = "";
+    if (!file) return;
+    note.textContent = "";
+    note.className = "";
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = function () {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      api("/api/rechnung", { number: card.number, jpeg: canvas.toDataURL("image/jpeg", 0.72) })
+        .then(function (updated) { publishCard(updated); })
+        .catch(function (error) {
+          note.className = "error";
+          note.textContent = error.message;
+        });
+    };
+    image.onerror = function () {
+      URL.revokeObjectURL(url);
+      note.className = "error";
+      note.textContent = "Die Rechnung ließ sich nicht lesen.";
+    };
+    image.src = url;
+  });
+  return el("div", { class: "scan" }, [
+    el("h3", {}, "Rechnung"),
+    el("p", { class: "hint" }, "Die Kamera nimmt den Bon auf. Der Betrag zählt, wenn die Kasse ihn bucht."),
+    receiptView(card),
+    el("label", { class: "scan-button", for: "rechnung-scan" }, "Rechnung scannen"),
+    input,
+    note,
+  ]);
+}
+
 function renderCustomer(card) {
   const head = el("h2", {}, "Kunde");
   kunde.replaceChildren(head);
   cardNodes(card, null).forEach(function (node) { kunde.append(node); });
+  kunde.append(scanSection(card));
 }
 
 function renderNameForm(message) {
@@ -243,8 +305,24 @@ function renderNameForm(message) {
     autocomplete: "name",
     "aria-label": "Ihr Name",
   });
+  const addressInput = el("input", {
+    id: "customer-address",
+    type: "text",
+    maxlength: "120",
+    autocomplete: "street-address",
+    "aria-label": "Adresse",
+  });
+  const numberInput = el("input", {
+    id: "customer-number-given",
+    type: "text",
+    maxlength: "32",
+    autocomplete: "off",
+    autocapitalize: "characters",
+    spellcheck: "false",
+    "aria-label": "Kundennummer",
+  });
   const note = el("p", { class: "error", role: "alert" }, message || "");
-  const button = el("button", { type: "submit" }, "Kundenkarte anlegen");
+  const button = el("button", { type: "submit" }, "Kundenkode erzeugen");
   const form = el("form", {
     class: "stack",
     onsubmit: function (event) {
@@ -252,9 +330,13 @@ function renderNameForm(message) {
       button.disabled = true;
       note.textContent = "";
       note.className = "error";
-      api("/api/kunde", { name: nameInput.value })
+      api("/api/kunde", {
+        name: nameInput.value,
+        address: addressInput.value,
+        kundennummer: numberInput.value,
+      })
         .then(function (card) {
-          saveNumber(card.number);
+          saveNumber(card.kode || card.number);
           renderCustomer(card);
         })
         .catch(function (error) {
@@ -263,9 +345,13 @@ function renderNameForm(message) {
         });
     },
   }, [
-    el("label", { for: "customer-name" }, "Ihr Name"),
+    el("label", { for: "customer-name" }, "Name"),
     nameInput,
-    el("p", { class: "hint" }, "Die Kundennummer bleibt auf diesem Gerät."),
+    el("label", { for: "customer-address" }, "Adresse"),
+    addressInput,
+    el("label", { for: "customer-number-given" }, "Kundennummer"),
+    numberInput,
+    el("p", { class: "hint" }, "Danach entsteht der Kundenkode. Der bleibt auf diesem Gerät."),
     button,
     note,
   ]);
@@ -286,6 +372,8 @@ function renderKasseCard(card) {
         kasseNote.textContent = error.message;
       });
   });
+  nodes.push(el("h3", {}, "Rechnung"));
+  nodes.push(receiptView(card));
   kasseResult.replaceChildren.apply(kasseResult, nodes);
 }
 

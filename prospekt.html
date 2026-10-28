@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kundenkarte Schmahl</title>
+  <style>
+    @page { margin: 14mm; }
+    body { margin: 0; background: #fff; color: #111; font-family: "Segoe UI", sans-serif; }
+    main { max-width: 92mm; margin: 0 auto; text-align: center; padding: 10mm 6mm 12mm; }
+    h1 { font-size: 22pt; font-weight: 650; margin: 0 0 3mm; letter-spacing: 0.01em; }
+    .lead { font-size: 13pt; margin: 0 0 6mm; }
+    #mark svg { width: 62mm; height: 62mm; }
+    .url { font-family: Consolas, "Courier New", monospace; font-size: 11pt; margin: 5mm 0 2mm; word-break: break-all; }
+    .hint { font-size: 10pt; margin: 0; }
+    .tools { margin-top: 8mm; font-size: 11pt; }
+    .tools a { color: #111; }
+    @media screen {
+      body { background: #111; }
+      main { background: #fff; margin-top: 8mm; }
+    }
+    @media print { .tools { display: none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Schmahl</h1>
+    <p class="lead">Kundenkarte aufs Handy laden</p>
+    <div id="mark"></div>
+    <p class="url" id="url"></p>
+    <p class="hint">Derselbe Kode hängt im Laden und steht auf dem Prospekt.</p>
+    <p class="tools">
+      <a id="save" href="#">Zeichen für den Druck speichern</a>
+    </p>
+  </main>
+  <script src="vendor/qrcode.js"></script>
+  <script src="prospekt.js"></script>
+</body>
+</html>

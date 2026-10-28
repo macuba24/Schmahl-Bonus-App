@@ -1,0 +1,16 @@
+{
+  "name": "Kundenkarte Schmahl",
+  "short_name": "Schmahl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#ff6600",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

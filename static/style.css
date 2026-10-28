@@ -1,10 +1,10 @@
 :root {
-  --paper: #f3efe6;
-  --ink: #1c1915;
-  --muted: #5e584e;
-  --line: #ddd4c4;
-  --green: #243f34;
-  --sheet: #f7f4ee;
+  --paper: #ffffff;
+  --ink: #111111;
+  --muted: #333333;
+  --line: #111111;
+  --orange: #ff6600;
+  --black: #111111;
   color-scheme: light;
 }
 
@@ -43,8 +43,8 @@ button, input, textarea {
 }
 
 button {
-  background: var(--green);
-  color: #f6f3ec;
+  background: var(--orange);
+  color: var(--black);
   border: 0;
   border-radius: 2px;
   padding: 0.75rem 1rem;
@@ -76,7 +76,7 @@ textarea { min-height: 4.6rem; resize: vertical; }
 label { display: block; margin-top: 0.85rem; font-weight: 650; }
 
 :focus-visible {
-  outline: 2px solid var(--green);
+  outline: 2px solid var(--orange);
   outline-offset: 2px;
 }
 
@@ -173,7 +173,7 @@ body[data-eingang="kasse"] #kunde { display: none; }
 .benefit {
   background: #fff;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--green);
+  border-left: 4px solid var(--orange);
   padding: 0.75rem 0.85rem;
   margin: 0.55rem 0;
 }
@@ -187,8 +187,38 @@ body[data-eingang="kasse"] #kunde { display: none; }
 .muted, .hint { color: var(--muted); }
 .hint { font-size: 0.95rem; }
 
-.ok { color: var(--green); }
+.ok { color: var(--black); }
 .error { color: #6e2e2e; }
+
+label.scan-button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 3.1rem;
+  margin-top: 0.4rem;
+  background: var(--orange);
+  color: var(--black);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+input.scan-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+}
+
+.shot {
+  display: block;
+  width: 100%;
+  margin: 0.4rem 0 0.7rem;
+  border: 2px solid var(--black);
+  background: #fff;
+}
 
 .month {
   margin: 1rem 0;
@@ -198,9 +228,9 @@ body[data-eingang="kasse"] #kunde { display: none; }
 }
 
 @media (hover: hover) {
-  button:hover { background: #1b3329; }
+  button:hover { background: #e65c00; }
   button[aria-pressed="false"]:hover,
-  button.quiet:hover { background: #efeae0; }
+  button.quiet:hover { background: #fff3eb; }
   button.logo-button:hover { background: transparent; }
 }
 
@@ -209,7 +239,7 @@ body[data-eingang="kasse"] #kunde { display: none; }
 }
 
 @media (min-width: 860px) {
-  body { background: #e5dfd2; }
+  body { background: var(--black); }
   main {
     max-width: 72rem;
     min-height: 100vh;
