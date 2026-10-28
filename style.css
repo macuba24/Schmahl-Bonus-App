@@ -96,7 +96,7 @@ label { display: block; margin-top: 0.45rem; font-weight: 650; }
 .logo-band {
   display: block;
   width: 100%;
-  background: #f27b20;
+  background: #fd7402;
 }
 
 .wordmark {
@@ -116,11 +116,11 @@ button.logo-button {
   border: 0;
   border-radius: 0;
   overflow: hidden;
-  background: #f27b20;
+  background: #fd7402;
   line-height: 0;
 }
 
-button.logo-button:hover { background: #f27b20; }
+button.logo-button:hover { background: #fd7402; }
 
 .logo {
   display: block;
@@ -322,7 +322,7 @@ input.scan-input {
   button:hover { background: #e65c00; }
   button[aria-pressed="false"]:hover,
   button.quiet:hover { background: #fff3eb; }
-  button.logo-button:hover { background: #f27b20; }
+  button.logo-button:hover { background: #fd7402; }
 }
 
 @media (max-width: 359px) {
