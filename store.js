@@ -175,6 +175,34 @@ var Schmahl = (function () {
     return tier;
   }
 
+  function normalizeCustomer(customer) {
+    if (!Array.isArray(customer.receipts)) customer.receipts = [];
+    if (customer.receipt && customer.receipt.jpeg) {
+      var known = false;
+      customer.receipts.forEach(function (item) {
+        if (item && item.jpeg === customer.receipt.jpeg) known = true;
+      });
+      if (!known) {
+        customer.receipts.push({
+          id: customer.receipt.id || 0,
+          storedAt: customer.receipt.storedAt || "",
+          jpeg: customer.receipt.jpeg,
+        });
+      }
+      delete customer.receipt;
+    }
+    var next = 0;
+    customer.receipts.forEach(function (item) {
+      if (item && item.id > next) next = item.id;
+    });
+    customer.receipts.forEach(function (item) {
+      if (!item.id) {
+        next += 1;
+        item.id = next;
+      }
+    });
+  }
+
   function cleanJpeg(payload) {
     if (typeof payload !== "string" || !payload.trim()) fail("Die Rechnung fehlt.");
     var text = payload.trim();
@@ -207,6 +235,7 @@ var Schmahl = (function () {
       }
       if (!data || typeof data !== "object") data = {};
       if (!Array.isArray(data.customers)) data.customers = [];
+      data.customers.forEach(normalizeCustomer);
       var benefits = {};
       TIERS.forEach(function (tier) {
         var saved = data.benefits && data.benefits[String(tier)];
@@ -292,7 +321,15 @@ var Schmahl = (function () {
             redeemed: !!redeemed[item.tierCents],
           };
         }),
-        receipt: customer.receipt ? { storedAt: customer.receipt.storedAt, jpeg: customer.receipt.jpeg } : null,
+        receipts: customer.receipts.map(function (item) {
+          return { id: item.id, storedAt: item.storedAt, jpeg: item.jpeg };
+        }),
+        receipt: customer.receipts.length
+          ? {
+            storedAt: customer.receipts[customer.receipts.length - 1].storedAt,
+            jpeg: customer.receipts[customer.receipts.length - 1].jpeg,
+          }
+          : null,
         messages: customer.messages.map(function (item) {
           return { id: item.id, sender: item.sender, text: item.text, at: item.at };
         }),
@@ -381,7 +418,7 @@ var Schmahl = (function () {
           purchases: [],
           redemptions: [],
           messages: [],
-          receipt: null,
+          receipts: [],
         };
         state.customers.push(customer);
         state.deviceKode = customer.number;
@@ -453,7 +490,13 @@ var Schmahl = (function () {
         var state = read();
         var customer = find(state, raw);
         var when = moment();
-        customer.receipt = { storedAt: when.iso, jpeg: cleanJpeg(jpeg) };
+        var nextId = customer.receipts.reduce(function (max, item) {
+          return item.id > max ? item.id : max;
+        }, 0) + 1;
+        customer.receipts.push({ id: nextId, storedAt: when.iso, jpeg: cleanJpeg(jpeg) });
+        if (customer.receipts.length > 24) {
+          customer.receipts = customer.receipts.slice(customer.receipts.length - 24);
+        }
         write(state);
         return card(state, customer, when);
       },

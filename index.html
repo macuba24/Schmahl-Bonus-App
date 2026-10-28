@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-title" content="Schmahl">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Kundenkarte Schmahl</title>
-  <link rel="icon" href="logo.png" type="image/png">
-  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -42,6 +42,16 @@
     <div id="laden-qr" class="laden-qr"></div>
     <p class="hint"><a href="prospekt.html">Prospekt mit dem Ladezeichen</a></p>
   </main>
+  <div id="install-ask" class="install-ask" hidden>
+    <div class="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title">
+      <h2 id="install-title">App installieren?</h2>
+      <p id="install-hint" class="hint" hidden></p>
+      <div class="install-actions">
+        <button type="button" id="install-yes">Ja</button>
+        <button type="button" id="install-no" class="quiet">Nein</button>
+      </div>
+    </div>
+  </div>
   <script src="vendor/qrcode.js"></script>
   <script src="store.js"></script>
   <script src="app.js"></script>

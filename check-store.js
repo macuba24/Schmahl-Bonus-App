@@ -93,7 +93,30 @@ assert(reply.messages[reply.messages.length - 1].sender === "firma", "Antwort");
 
 var jpeg = "data:image/jpeg;base64," + "/9j/" + "A".repeat(400);
 var shot = store.saveReceipt(card.number, jpeg);
+assert(shot.receipts.length === 1, "Speicher");
 assert(shot.receipt.jpeg.indexOf("data:image/jpeg") === 0, "Foto");
+var again = store.saveReceipt(card.number, jpeg);
+assert(again.receipts.length === 2, "zweite Rechnung");
+assert(again.receipts[0].jpeg === shot.receipt.jpeg, "erste bleibt");
+
+var legacy = memory();
+legacy.setItem("schmahl-karte", JSON.stringify({
+  customers: [{
+    number: "AB23CD45",
+    name: "Alt",
+    address: "Weg 1",
+    kundennummer: "ALT-1",
+    purchases: [],
+    redemptions: [],
+    messages: [],
+    receipt: { storedAt: "2026-10-01T09:00:00", jpeg: jpeg },
+  }],
+  deviceKode: "AB23CD45",
+}));
+var legacyStore = Schmahl.createStore(legacy, function () {
+  return { year: 2026, month: 10, iso: "2026-10-28T12:00:00" };
+});
+assert(legacyStore.deviceCard().receipts.length === 1, "alte Rechnung im Speicher");
 
 failed = false;
 try {

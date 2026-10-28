@@ -278,6 +278,9 @@ input.scan-input {
   opacity: 0;
 }
 
+.stored-receipt { margin: 0.7rem 0 0; }
+.stored-receipt .hint { margin-bottom: 0.15rem; }
+
 .shot {
   display: block;
   width: 100%;
@@ -305,6 +308,37 @@ input.scan-input {
 .note-line.firma { border-left-color: var(--orange); }
 
 .note-line .who { font-weight: 650; }
+
+.install-ask {
+  position: fixed;
+  z-index: 6;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(17, 17, 17, 0.55);
+}
+
+.install-card {
+  width: min(100%, 22rem);
+  background: #fff;
+  padding: 1.15rem 1rem 1rem;
+  border: 2px solid var(--black);
+}
+
+.install-card h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 0.85rem;
+  text-align: center;
+}
+
+.install-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
 
 @media (hover: hover) {
   button:hover { background: #e65c00; }

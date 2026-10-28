@@ -29,7 +29,7 @@ var kunde = document.querySelector("#kunde");
 var kasse = document.querySelector("#kasse");
 var shopLines = document.querySelector("#shop-lines");
 var store = Schmahl.createStore(localStorage);
-var pendingReceipt = "";
+var pendingReceipts = [];
 var pendingMessage = "";
 var kasseNumber = "";
 var benefitFields = [];
@@ -224,9 +224,16 @@ function cardNodes(card, onRedeem) {
   ].concat(benefitNodes(card, onRedeem));
 }
 
-function receiptView(card) {
-  if (!card.receipt || !card.receipt.jpeg) return el("p", { class: "hint" }, "Noch keine Rechnung gescannt.");
-  return el("img", { class: "shot", alt: "Gescannte Rechnung", src: card.receipt.jpeg });
+function receiptArchive(items) {
+  var list = items || [];
+  if (!list.length) return el("p", { class: "hint" }, "Der Rechnungsspeicher ist leer.");
+  return el("div", { class: "receipt-store" }, list.slice().reverse().map(function (item, index) {
+    var label = item.storedAt ? stamp(item.storedAt) : "Noch nicht abgelegt";
+    return el("figure", { class: "stored-receipt" }, [
+      el("figcaption", { class: "hint" }, "Rechnung " + (list.length - index) + (label ? " · " + label : "")),
+      el("img", { class: "shot", alt: "Gespeicherte Rechnung", src: item.jpeg }),
+    ]);
+  }));
 }
 
 function readReceipt(file, onJpeg, note) {
@@ -267,8 +274,8 @@ function scanPicker(id, preview, onJpeg) {
     readReceipt(file, onJpeg, note);
   });
   return el("div", { class: "scan" }, [
-    el("h3", {}, "Rechnung"),
-    el("p", { class: "hint" }, "Die Kamera nimmt den Bon auf. Der Betrag zählt, wenn die Kasse ihn bucht."),
+    el("h3", {}, "Rechnungsspeicher"),
+    el("p", { class: "hint" }, "Jede gescannte Rechnung bleibt auf diesem Handy. Der Betrag zählt, wenn die Kasse ihn bucht."),
     preview,
     el("label", { class: "scan-button", for: id }, "Rechnung scannen"),
     input,
@@ -278,11 +285,14 @@ function scanPicker(id, preview, onJpeg) {
 
 function scanSection(card) {
   var preview = el("div");
-  if (card.receipt && card.receipt.jpeg) preview.append(receiptView(card));
+  preview.append(receiptArchive(card.receipts));
   return scanPicker("rechnung-scan", preview, function (jpeg) {
     var note = preview.parentNode.querySelector("[role='status']");
     var updated = act(note, null, function () { return store.saveReceipt(card.number, jpeg); });
-    if (updated) publishCard(updated);
+    if (!updated) return;
+    note.className = "ok";
+    note.textContent = "Im Rechnungsspeicher.";
+    publishCard(updated);
   });
 }
 
@@ -396,14 +406,16 @@ function renderNameForm(message) {
         });
       });
       if (!created) return;
-      if (pendingReceipt) {
+      if (pendingReceipts.length) {
         try {
-          created = store.saveReceipt(created.number, pendingReceipt);
+          pendingReceipts.forEach(function (jpeg) {
+            created = store.saveReceipt(created.number, jpeg);
+          });
         } catch (error) {
           note.className = "error";
           note.textContent = error.message;
         }
-        pendingReceipt = "";
+        pendingReceipts = [];
       }
       if (String(pendingMessage || "").trim()) {
         try {
@@ -428,13 +440,13 @@ function renderNameForm(message) {
     note,
   ]);
   var preview = el("div");
-  if (pendingReceipt) preview.append(el("img", { class: "shot", alt: "Gescannte Rechnung", src: pendingReceipt }));
+  preview.append(receiptArchive(pendingReceipts));
   kunde.replaceChildren(
     el("h2", {}, "Kunde"),
     form,
     scanPicker("rechnung-neu", preview, function (jpeg) {
-      pendingReceipt = jpeg;
-      preview.replaceChildren(el("img", { class: "shot", alt: "Gescannte Rechnung", src: jpeg }));
+      pendingReceipts.push({ jpeg: jpeg });
+      preview.replaceChildren(receiptArchive(pendingReceipts));
     }),
     draftMessage()
   );
@@ -448,8 +460,8 @@ function renderKasseCard(card) {
     });
     if (updated) showOnKasse(updated);
   });
-  nodes.push(el("h3", {}, "Rechnung"));
-  nodes.push(receiptView(card));
+  nodes.push(el("h3", {}, "Rechnungsspeicher"));
+  nodes.push(receiptArchive(card.receipts));
   nodes.push(messageSection(card, "firma"));
   kasseResult.replaceChildren.apply(kasseResult, nodes);
 }
@@ -641,6 +653,83 @@ function renderLoadQr() {
   box.append(el("p", { class: "url-line" }, el("a", { href: url }, "www.gartentechnik-koblenz.de")));
 }
 
+var deferredInstall = null;
+
+function installedApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function iosBrowser() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+function showInstallAsk() {
+  if (installedApp()) return;
+  if (sessionStorage.getItem("schmahl-install") === "nein") return;
+  document.querySelector("#install-ask").hidden = false;
+}
+
+function hideInstallAsk(remember) {
+  document.querySelector("#install-ask").hidden = true;
+  if (remember) sessionStorage.setItem("schmahl-install", "nein");
+}
+
+function installByHand() {
+  var hint = document.querySelector("#install-hint");
+  hint.textContent = iosBrowser()
+    ? "Tippe auf das Teilen-Zeichen und dann auf „Zum Home-Bildschirm“."
+    : "Öffne das Browser-Menü und tippe auf „App installieren“ oder „Zum Startbildschirm hinzufügen“.";
+  hint.hidden = false;
+}
+
+function waitForInstallPrompt() {
+  return new Promise(function (resolve) {
+    if (deferredInstall) {
+      resolve(deferredInstall);
+      return;
+    }
+    var left = 8;
+    var timer = setInterval(function () {
+      left -= 1;
+      if (deferredInstall || left <= 0) {
+        clearInterval(timer);
+        resolve(deferredInstall);
+      }
+    }, 200);
+  });
+}
+
+function bindInstallAsk() {
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredInstall = event;
+    showInstallAsk();
+  });
+  document.querySelector("#install-yes").addEventListener("click", function () {
+    waitForInstallPrompt().then(function (prompt) {
+      if (!prompt) {
+        installByHand();
+        return;
+      }
+      prompt.prompt();
+      prompt.userChoice.then(function (choice) {
+        deferredInstall = null;
+        hideInstallAsk(choice.outcome !== "accepted");
+      });
+    });
+  });
+  document.querySelector("#install-no").addEventListener("click", function () {
+    hideInstallAsk(true);
+  });
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(function () {});
+  }
+  showInstallAsk();
+}
+
 function start() {
   checkBarcode();
   document.querySelector("#tab-kunde").addEventListener("click", function () {
@@ -657,6 +746,7 @@ function start() {
     loadLocalCustomer();
   });
   renderLoadQr();
+  bindInstallAsk();
   try {
     var shop = store.shop();
     document.title = "Kundenkarte " + shop.wordmark;
