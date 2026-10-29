@@ -125,7 +125,7 @@ button.send {
   min-height: 2.7rem;
   margin-top: 0.35rem;
   padding: 0.45rem 1.5rem;
-  border: 0;
+  border: 3px solid #ff6600;
   border-radius: 999px;
   background: #111111;
   color: #ffffff;
