@@ -210,6 +210,31 @@ function nextSentence(card) {
   return "Noch " + euroWords(card.remainingCents) + " bis zur nächsten Stufe.";
 }
 
+function progressBar(card) {
+  var start = card.reachedTierCents || 0;
+  var end = card.nextTierCents;
+  var value = 100;
+  if (end != null && end > start) {
+    value = Math.round((card.turnoverCents - start) * 100 / (end - start));
+    if (value < 0) value = 0;
+    if (value > 100) value = 100;
+  }
+  var label = nextSentence(card);
+  var fill = el("div", { class: "progress-fill" });
+  fill.style.width = value + "%";
+  return el("div", { class: "progress-block" }, [
+    el("div", {
+      class: "progress",
+      role: "progressbar",
+      "aria-valuemin": "0",
+      "aria-valuemax": "100",
+      "aria-valuenow": String(value),
+      "aria-label": label,
+    }, fill),
+    el("p", { class: "hint" }, label),
+  ]);
+}
+
 function cardNodes(card, onRedeem) {
   var box = el("div", { class: "barcode" });
   box.append(barcodeSvg(card.kode || card.number));
@@ -228,7 +253,7 @@ function cardNodes(card, onRedeem) {
     el("p", { class: "tier-label" }, "Jahresumsatz " + card.year),
     el("p", { class: "figure" }, euro(card.turnoverCents)),
     el("p", {}, tierSentence(card)),
-    el("p", {}, nextSentence(card)),
+    progressBar(card),
     el("h3", {}, "Bonusstufen"),
   ].concat([bonusList(card, onRedeem)]);
 }

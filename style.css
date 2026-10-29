@@ -243,6 +243,23 @@ body[data-eingang="kasse"] #kunde { display: none; }
   margin: 0.15rem 0 0.7rem;
 }
 
+.progress-block { margin: 0.15rem 0 0.8rem; }
+
+.progress {
+  height: 0.9rem;
+  background: rgba(17, 17, 17, 0.12);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--orange);
+}
+
+body[data-stufe="2"] .progress,
+body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
+
 .stack { display: grid; gap: 0.45rem; margin: 0.4rem 0 1rem; }
 
 .benefit {
