@@ -200,6 +200,15 @@ button.logo-button:hover { background: #fd7402; }
 
 .shop-lines a { text-decoration: none; }
 
+.homepage {
+  margin: 0.9rem 0 0.2rem;
+  text-align: center;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.homepage a { font-weight: 700; }
+
 .switch {
   position: fixed;
   z-index: 3;
