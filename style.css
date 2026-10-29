@@ -35,6 +35,47 @@ main {
     calc(7.4rem + env(safe-area-inset-bottom));
 }
 
+body[data-stufe="1"] {
+  --paper: #d9d9d9;
+  --ink: #111111;
+  --muted: #333333;
+  --line: #111111;
+  background: #d9d9d9;
+}
+
+body[data-stufe="2"] {
+  --paper: #3c3c3c;
+  --ink: #f4f4f4;
+  --muted: #d2d2d2;
+  --line: #f4f4f4;
+  background: #3c3c3c;
+}
+
+body[data-stufe="3"] {
+  --paper: #111111;
+  --ink: #f4f4f4;
+  --muted: #cfcfcf;
+  --line: #f4f4f4;
+  background: #111111;
+}
+
+body[data-stufe="2"],
+body[data-stufe="3"] { color-scheme: dark; }
+
+body[data-stufe="2"] .error,
+body[data-stufe="3"] .error { color: #ffb4b4; }
+
+.barcode,
+.benefit,
+.step,
+.note-line,
+.install-card {
+  color: #111111;
+  --ink: #111111;
+  --muted: #333333;
+  --line: #111111;
+}
+
 h1, h2, h3 { font-weight: 650; line-height: 1.2; }
 h2 { font-size: 1.35rem; margin: 0 0 0.7rem; }
 h3 { font-size: 1.2rem; margin: 0.2rem 0; }
@@ -45,9 +86,12 @@ a { color: inherit; }
 
 button, input, textarea, label.scan-button {
   font: inherit;
-  color: inherit;
   touch-action: manipulation;
 }
+
+button, label.scan-button { color: inherit; }
+
+input, textarea { color: #111111; }
 
 button {
   background: var(--orange);
@@ -231,7 +275,7 @@ body[data-eingang="kasse"] #kunde { display: none; }
 .muted, .hint { color: var(--muted); }
 .hint { font-size: 0.95rem; }
 
-.ok { color: var(--black); }
+.ok { color: var(--ink); }
 .error { color: #6e2e2e; }
 
 label.scan-button {

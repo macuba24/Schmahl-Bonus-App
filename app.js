@@ -371,6 +371,7 @@ function draftMessage() {
 }
 
 function renderCustomer(card) {
+  paintLevel("kunde", card);
   kunde.replaceChildren(el("h2", {}, "Kunde"));
   kunde.append(messageSection(card, "kunde"));
   cardNodes(card, null).forEach(function (node) { kunde.append(node); });
@@ -450,6 +451,7 @@ function renderNameForm(message) {
   ]);
   var preview = el("div");
   preview.append(receiptArchive(pendingReceipts));
+  paintLevel("kunde", null);
   kunde.replaceChildren(
     el("h2", {}, "Kunde"),
     el("h3", {}, "Bonusstufen"),
@@ -464,6 +466,7 @@ function renderNameForm(message) {
 }
 
 function renderKasseCard(card) {
+  paintLevel("kasse", card);
   kasseNumber = card.number;
   var nodes = cardNodes(card, function (item, button) {
     var updated = act(kasseNote, button, function () {
@@ -499,6 +502,28 @@ function setEingang(name) {
   document.body.dataset.eingang = name;
   document.querySelector("#tab-kunde").setAttribute("aria-pressed", name === "kunde" ? "true" : "false");
   document.querySelector("#tab-kasse").setAttribute("aria-pressed", name === "kasse" ? "true" : "false");
+  applyLevel(name);
+}
+
+var levelByView = { kunde: "0", kasse: "0" };
+
+function levelOf(card) {
+  var cents = card && card.reachedTierCents;
+  if (!cents) return "0";
+  if (cents >= 500000) return "3";
+  if (cents >= 300000) return "2";
+  return "1";
+}
+
+function paintLevel(view, card) {
+  levelByView[view] = levelOf(card);
+  if (document.body.dataset.eingang === view) applyLevel(view);
+}
+
+function applyLevel(view) {
+  var level = levelByView[view] || "0";
+  if (level === "0") delete document.body.dataset.stufe;
+  else document.body.dataset.stufe = level;
 }
 
 function renderShop(shop) {
