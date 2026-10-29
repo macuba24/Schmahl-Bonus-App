@@ -314,8 +314,12 @@ body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
   background: #fff;
   border: 1px solid var(--line);
   border-left: 4px solid #b7b0a4;
-  padding: 0.7rem 0.85rem;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
 }
+
+.step p { margin: 0; }
 
 .step,
 .benefit {
@@ -327,7 +331,7 @@ body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
 
 .step.reached { border-left-color: var(--orange); }
 .step.current { background: #fff3eb; }
-.step .step-rate { font-weight: 700; margin: 0.1rem 0; }
+.step .step-rate { font-weight: 700; }
 
 .benefit p { margin: 0.15rem 0; }
 
