@@ -342,11 +342,18 @@ function scanSection(card) {
   });
 }
 
+function infoPrompt() {
+  return el("div", { class: "info-ask" }, [
+    el("p", { class: "info-title" }, "INFO an Firma Schmahl"),
+    el("p", {}, "Was finden Sie gut, was finden Sie schlecht?"),
+  ]);
+}
+
 function messageSection(card, sender) {
   var note = el("p", { role: "status" });
   var area = el("textarea", {
     maxlength: "1000",
-    "aria-label": sender === "kunde" ? "Nachricht an die Firma" : "Antwort an den Kunden",
+    "aria-label": sender === "kunde" ? "INFO an Firma Schmahl" : "Antwort an den Kunden",
   });
   var button = el("button", { type: "button" }, sender === "kunde" ? "An die Firma schreiben" : "Antworten");
   var lines = (card.messages || []).map(function (item) {
@@ -371,6 +378,7 @@ function messageSection(card, sender) {
   return el("div", { class: "mail" }, [
     el("h3", {}, "Schreiben"),
     thread,
+    sender === "kunde" ? infoPrompt() : null,
     area,
     button,
     note,
@@ -382,8 +390,8 @@ function draftMessage() {
   var area = el("textarea", {
     id: "nachricht-neu",
     maxlength: "1000",
-    "aria-label": "Nachricht an die Firma",
-    placeholder: "Nachricht an die Firma",
+    "aria-label": "INFO an Firma Schmahl",
+    placeholder: "Was finden Sie gut, was finden Sie schlecht?",
   });
   area.value = pendingMessage;
   area.addEventListener("input", function () { pendingMessage = area.value; });
@@ -400,7 +408,7 @@ function draftMessage() {
   });
   return el("div", { class: "mail" }, [
     el("h3", {}, "Schreiben"),
-    el("p", { class: "hint" }, "Hier schreibst du der Firma."),
+    infoPrompt(),
     area,
     button,
     note,
@@ -833,7 +841,7 @@ function start() {
   bindInstallAsk();
   try {
     var shop = store.shop();
-    document.title = "Kundenkarte " + shop.wordmark;
+    document.title = "Kundenapp " + shop.wordmark;
     renderShop(shop);
     buildKasse(shop);
     loadLocalCustomer();

@@ -93,15 +93,24 @@ button, label.scan-button { color: inherit; }
 
 input, textarea { color: #111111; }
 
-button {
-  background: var(--orange);
-  color: var(--black);
-  border: 0;
-  border-radius: 2px;
+button:not(.logo-button),
+label.scan-button {
+  border-radius: 0.85rem;
   padding: 0.75rem 1rem;
   min-height: 3.1rem;
   width: 100%;
   cursor: pointer;
+}
+
+button:not(.logo-button):not(.quiet):not([aria-pressed="false"]),
+label.scan-button {
+  border: 1px solid #c24100;
+  background: linear-gradient(180deg, #ff9340 0%, #ff6600 46%, #e25500 100%);
+  color: var(--black);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -3px 5px rgba(120, 30, 0, 0.28),
+    0 3px 0 #b84300;
 }
 
 button[aria-pressed="false"],
@@ -207,7 +216,13 @@ button.logo-button:hover { background: #fd7402; }
   font-weight: 700;
 }
 
-.homepage a { font-weight: 700; }
+.info-ask { margin: 0.55rem 0 0.2rem; }
+.info-title {
+  margin-bottom: 0.1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.info-ask p:last-child { font-weight: 700; }
 
 .switch {
   position: fixed;
@@ -265,10 +280,12 @@ body[data-eingang="kasse"] #kunde { display: none; }
 .progress-block { margin: 0.15rem 0 0.8rem; }
 
 .progress {
-  height: 0.9rem;
+  height: 1.35rem;
   background: rgba(17, 17, 17, 0.12);
   border: 1px solid var(--line);
+  border-radius: 0.85rem;
   overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.22);
 }
 
 .progress-fill {
@@ -300,6 +317,14 @@ body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
   padding: 0.7rem 0.85rem;
 }
 
+.step,
+.benefit {
+  border-radius: 0.85rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 3px 0 rgba(0, 0, 0, 0.12);
+}
+
 .step.reached { border-left-color: var(--orange); }
 .step.current { background: #fff3eb; }
 .step .step-rate { font-weight: 700; margin: 0.1rem 0; }
@@ -320,8 +345,6 @@ label.scan-button {
   width: 100%;
   min-height: 3.1rem;
   margin-top: 0.4rem;
-  background: var(--orange);
-  color: var(--black);
   font-weight: 650;
   cursor: pointer;
 }
@@ -399,7 +422,10 @@ input.scan-input {
 }
 
 @media (hover: hover) {
-  button:hover { background: #e65c00; }
+  button:not(.logo-button):not(.quiet):not([aria-pressed="false"]):hover,
+  label.scan-button:hover {
+    background: linear-gradient(180deg, #ff8124 0%, #e65c00 50%, #cc4e00 100%);
+  }
   button[aria-pressed="false"]:hover,
   button.quiet:hover { background: #fff3eb; }
   button.logo-button:hover { background: #fd7402; }

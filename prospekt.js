@@ -8,7 +8,7 @@ var svg = code.createSvgTag({
   cellSize: 4,
   margin: 4,
   scalable: true,
-  title: "Kundenkarte Schmahl",
+  title: "Kundenapp Schmahl",
 });
 document.querySelector("#mark").innerHTML = svg;
 document.querySelector("#url").textContent = appUrl;
