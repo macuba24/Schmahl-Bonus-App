@@ -297,10 +297,16 @@ body[data-eingang="kasse"] #kunde { display: none; }
   margin: 0.15rem 0 0.7rem;
 }
 
-.progress-block { margin: 0.15rem 0 0.8rem; }
+.progress-block { margin: 0.15rem 0 1rem; }
+
+.progress-label {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-weight: 700;
+}
 
 .progress {
-  height: 1.35rem;
+  height: 1.7rem;
   background: rgba(17, 17, 17, 0.12);
   border: 1px solid var(--line);
   border-radius: 0.85rem;

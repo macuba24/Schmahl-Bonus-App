@@ -241,7 +241,7 @@ function progressBar(card) {
       "aria-valuenow": String(value),
       "aria-label": label,
     }, fill),
-    el("p", { class: "hint" }, label),
+    el("p", { class: "progress-label" }, label),
   ]);
 }
 
@@ -265,7 +265,6 @@ function cardNodes(card, onRedeem) {
     el("p", { class: "tier-label" }, "Jahresumsatz " + card.year),
     el("p", { class: "figure" }, euro(card.turnoverCents)),
     el("p", {}, tierSentence(card)),
-    progressBar(card),
     el("h3", {}, "Bonusstufen"),
   ].concat([bonusList(card, onRedeem)]);
 }
@@ -417,7 +416,7 @@ function draftMessage() {
 
 function renderCustomer(card) {
   paintLevel("kunde", card);
-  kunde.replaceChildren(el("h2", {}, "Kunde"));
+  kunde.replaceChildren(el("h2", {}, "Kunde"), progressBar(card));
   kunde.append(messageSection(card, "kunde"));
   cardNodes(card, null).forEach(function (node) { kunde.append(node); });
   kunde.append(scanSection(card));
@@ -528,6 +527,12 @@ function renderNameForm(message) {
   paintLevel("kunde", null);
   kunde.replaceChildren(
     el("h2", {}, "Kunde"),
+    progressBar({
+      turnoverCents: 0,
+      reachedTierCents: null,
+      nextTierCents: 100000,
+      remainingCents: 100000,
+    }),
     el("h3", {}, "Bonusstufen"),
     openBonusList(),
     form,
@@ -548,6 +553,7 @@ function renderKasseCard(card) {
     });
     if (updated) showOnKasse(updated);
   });
+  nodes.unshift(progressBar(card));
   nodes.push(el("h3", {}, "Rechnungsspeicher"));
   nodes.push(receiptArchive(card.receipts));
   nodes.push(messageSection(card, "firma"));
