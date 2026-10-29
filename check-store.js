@@ -32,9 +32,12 @@ var card = store.createCustomer({
   name: "Ada Berger",
   address: "Rheinstraße 1, Koblenz",
   kundennummer: "k-12",
+  birthdayDay: "14",
+  birthdayMonth: "3",
 });
 assert(card.number.length === 8, "Kode-Länge");
 assert(card.kundennummer === "K-12", "Kundennummer");
+assert(card.birthdayDay === 14 && card.birthdayMonth === 3, "Geburtstag");
 assert(card.turnoverCents === 0, "Startumsatz");
 assert(card.remainingCents === 100000, "erste Stufe");
 assert(store.deviceCard().number === card.number, "Gerät merkt den Kode");
@@ -120,7 +123,7 @@ assert(legacyStore.deviceCard().receipts.length === 1, "alte Rechnung im Speiche
 
 failed = false;
 try {
-  store.createCustomer({ name: "Bea", address: "Markt 2", kundennummer: "k-12" });
+  store.createCustomer({ name: "Bea", address: "Markt 2", kundennummer: "k-12", birthdayDay: "1", birthdayMonth: "1" });
 } catch (error) {
   failed = /schon/.test(error.message);
 }

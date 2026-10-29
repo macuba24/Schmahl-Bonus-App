@@ -120,6 +120,20 @@ var Schmahl = (function () {
     return text;
   }
 
+  function cleanBirthday(dayValue, monthValue) {
+    var dayText = String(dayValue == null ? "" : dayValue).trim();
+    var monthText = String(monthValue == null ? "" : monthValue).trim();
+    if (!/^\d{1,2}$/.test(dayText) || !/^\d{1,2}$/.test(monthText)) {
+      fail("Bitte Tag und Monat des Geburtstags eingeben.");
+    }
+    var day = Number(dayText);
+    var month = Number(monthText);
+    if (month < 1 || month > 12) fail("Der Monat liegt zwischen 1 und 12.");
+    var lengths = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (day < 1 || day > lengths[month - 1]) fail("Diesen Tag gibt es in dem Monat nicht.");
+    return { day: day, month: month };
+  }
+
   function normalizeNumber(value) {
     var text = String(value || "").replace(/\s+/g, "").toUpperCase();
     if (hasControl(text) || text.length > 32) fail("Diese Kundennummer gibt es nicht.");
@@ -305,6 +319,8 @@ var Schmahl = (function () {
         name: customer.name,
         address: customer.address || "",
         kundennummer: customer.kundennummer || "",
+        birthdayDay: customer.birthdayDay || null,
+        birthdayMonth: customer.birthdayMonth || null,
         year: when.year,
         turnoverCents: turnover,
         reachedTierCents: reached,
@@ -405,6 +421,7 @@ var Schmahl = (function () {
         var name = cleanName(input && input.name);
         var address = cleanAddress(input && input.address);
         var kundennummer = cleanKundennummer(input && input.kundennummer);
+        var birthday = cleanBirthday(input && input.birthdayDay, input && input.birthdayMonth);
         state.customers.forEach(function (customer) {
           if (customer.kundennummer === kundennummer) fail("Diese Kundennummer gibt es schon.");
         });
@@ -414,6 +431,8 @@ var Schmahl = (function () {
           name: name,
           address: address,
           kundennummer: kundennummer,
+          birthdayDay: birthday.day,
+          birthdayMonth: birthday.month,
           createdAt: when.iso,
           purchases: [],
           redemptions: [],

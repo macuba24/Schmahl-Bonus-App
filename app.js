@@ -199,6 +199,16 @@ function openBonusList() {
   }));
 }
 
+var BIRTHDAY_MONTHS = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember",
+];
+
+function birthdayText(card) {
+  if (!card.birthdayDay || !card.birthdayMonth) return "—";
+  return card.birthdayDay + ". " + BIRTHDAY_MONTHS[card.birthdayMonth - 1];
+}
+
 function tierSentence(card) {
   if (!card.reachedTierCents) return "Stufe noch nicht erreicht.";
   var tier = card.benefits.find(function (item) { return item.tierCents === card.reachedTierCents; });
@@ -243,6 +253,8 @@ function cardNodes(card, onRedeem) {
     card.address ? el("p", {}, card.address) : null,
     el("p", { class: "tier-label" }, "Kundennummer"),
     el("p", { class: "number", translate: "no" }, card.kundennummer || "—"),
+    el("p", { class: "tier-label" }, "Geburtstag"),
+    el("p", {}, birthdayText(card)),
     el("p", { class: "tier-label" }, "Kunden-Code"),
     el("p", { class: "number", translate: "no" }, card.kode || card.number),
     box,
@@ -427,6 +439,22 @@ function renderNameForm(message) {
     spellcheck: "false",
     "aria-label": "Kundennummer",
   });
+  var dayInput = el("input", {
+    id: "customer-birthday-day",
+    type: "text",
+    inputmode: "numeric",
+    maxlength: "2",
+    autocomplete: "bday-day",
+    "aria-label": "Tag",
+  });
+  var monthInput = el("input", {
+    id: "customer-birthday-month",
+    type: "text",
+    inputmode: "numeric",
+    maxlength: "2",
+    autocomplete: "bday-month",
+    "aria-label": "Monat",
+  });
   var note = el("p", { class: "error", role: "alert" }, message || "");
   var button = el("button", { type: "submit" }, "Kunden-Code erzeugen");
   var form = el("form", {
@@ -438,6 +466,8 @@ function renderNameForm(message) {
           name: nameInput.value,
           address: addressInput.value,
           kundennummer: numberInput.value,
+          birthdayDay: dayInput.value,
+          birthdayMonth: monthInput.value,
         });
       });
       if (!created) return;
@@ -468,6 +498,17 @@ function renderNameForm(message) {
     nameInput,
     el("label", { for: "customer-address" }, "Adresse"),
     addressInput,
+    el("p", { class: "tier-label" }, "Geburtstag"),
+    el("div", { class: "birthday" }, [
+      el("div", {}, [
+        el("label", { for: "customer-birthday-day" }, "Tag"),
+        dayInput,
+      ]),
+      el("div", {}, [
+        el("label", { for: "customer-birthday-month" }, "Monat"),
+        monthInput,
+      ]),
+    ]),
     el("label", { for: "customer-number-given" }, "Kundennummer"),
     numberInput,
     el("p", { class: "hint" }, "Danach entsteht der Kunden-Code. Er bleibt auf diesem Handy."),
