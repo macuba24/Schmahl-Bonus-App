@@ -102,7 +102,7 @@ label.scan-button {
   cursor: pointer;
 }
 
-button:not(.logo-button):not(.quiet):not([aria-pressed="false"]),
+button:not(.logo-button):not(.quiet):not(.send):not([aria-pressed="false"]),
 label.scan-button {
   border: 1px solid #c24100;
   background: linear-gradient(180deg, #ff9340 0%, #ff6600 46%, #e25500 100%);
@@ -118,6 +118,19 @@ button.quiet {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
+}
+
+button.send {
+  width: auto;
+  min-height: 2.7rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  font-weight: 650;
+  box-shadow: none;
 }
 
 button:disabled { opacity: 0.55; cursor: default; }
@@ -207,7 +220,14 @@ button.logo-button:hover { background: #fd7402; }
 .shop-lines { font-size: 0.9rem; }
 .shop-lines p { margin: 0.08rem 0; }
 
-.shop-lines a { text-decoration: none; }
+.shop-lines a.call {
+  display: inline-block;
+  padding: 0.35rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
 
 .homepage {
   margin: 0.9rem 0 0.2rem;
@@ -426,7 +446,7 @@ input.scan-input {
 }
 
 @media (hover: hover) {
-  button:not(.logo-button):not(.quiet):not([aria-pressed="false"]):hover,
+  button:not(.logo-button):not(.quiet):not(.send):not([aria-pressed="false"]):hover,
   label.scan-button:hover {
     background: linear-gradient(180deg, #ff8124 0%, #e65c00 50%, #cc4e00 100%);
   }

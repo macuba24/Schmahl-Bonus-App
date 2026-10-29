@@ -355,7 +355,7 @@ function messageSection(card, sender) {
     maxlength: "1000",
     "aria-label": sender === "kunde" ? "INFO an Firma Schmahl" : "Antwort an den Kunden",
   });
-  var button = el("button", { type: "button" }, sender === "kunde" ? "An die Firma schreiben" : "Antworten");
+  var button = el("button", { type: "button", class: sender === "kunde" ? "send" : "" }, sender === "kunde" ? "Senden" : "Antworten");
   var lines = (card.messages || []).map(function (item) {
     return el("p", { class: item.sender === "firma" ? "note-line firma" : "note-line" }, [
       el("span", { class: "who" }, (item.sender === "firma" ? "Schmahl" : "Kunde") + " "),
@@ -395,7 +395,7 @@ function draftMessage() {
   });
   area.value = pendingMessage;
   area.addEventListener("input", function () { pendingMessage = area.value; });
-  var button = el("button", { type: "button" }, "An die Firma schreiben");
+  var button = el("button", { type: "button", class: "send" }, "Senden");
   button.addEventListener("click", function () {
     pendingMessage = area.value;
     if (!String(area.value || "").trim()) {
@@ -606,7 +606,7 @@ function renderShop(shop) {
     el("p", {}, shop.street),
     el("p", {}, shop.district),
     el("p", {}, shop.postalCode + " " + shop.city),
-    el("p", {}, el("a", { href: shop.phoneHref }, shop.phone)),
+    el("p", {}, el("a", { class: "call", href: shop.phoneHref }, shop.phone)),
     el("p", {}, shop.hours[0]),
     el("p", {}, shop.hours[1])
   );

@@ -8,5 +8,6 @@ self.addEventListener("activate", function (event) {
 
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
+  if (event.request.url.indexOf("http") !== 0) return;
   event.respondWith(fetch(event.request));
 });
