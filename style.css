@@ -169,6 +169,25 @@ label { display: block; margin-top: 0.45rem; font-weight: 650; }
   text-align: center;
 }
 
+#panel-live {
+  margin: 0.75rem 0 0;
+}
+
+#panel-live .live-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.4rem;
+}
+
+#panel-live .live-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.28);
+}
+
 .logo-band {
   display: block;
   width: 100%;
@@ -337,13 +356,24 @@ body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
 .steps { display: grid; gap: 0.45rem; margin: 0.2rem 0 1rem; }
 
 .step {
-  background: #fff;
+  position: relative;
+  overflow: hidden;
+  background: #ececec;
   border: 1px solid var(--line);
-  border-left: 4px solid #b7b0a4;
-  padding: 0.2rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   font-size: 0.9rem;
   line-height: 1.2;
 }
+
+.step-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--orange);
+}
+
+.step-copy { position: relative; }
 
 .step p { margin: 0; }
 
@@ -355,11 +385,21 @@ body[data-stufe="3"] .progress { background: rgba(255, 255, 255, 0.16); }
     0 3px 0 rgba(0, 0, 0, 0.12);
 }
 
-.step.reached { border-left-color: var(--orange); }
-.step.current { background: #fff3eb; }
 .step .step-rate { font-weight: 700; }
 
 .benefit p { margin: 0.15rem 0; }
+
+.slip-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.55fr 0.75fr;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.slip-sum { font-weight: 700; }
+.slip-choice, .slip-links { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.slip-check { display: flex; gap: 0.45rem; align-items: flex-start; margin: 0.55rem 0; }
+.slip-check input { width: auto; margin-top: 0.2rem; }
+.slip textarea { width: 100%; min-height: 4.2rem; }
 
 .tier-label { color: var(--muted); }
 

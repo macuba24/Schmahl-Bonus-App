@@ -338,7 +338,13 @@ var Schmahl = (function () {
           };
         }),
         receipts: customer.receipts.map(function (item) {
-          return { id: item.id, storedAt: item.storedAt, jpeg: item.jpeg };
+          return {
+            id: item.id,
+            storedAt: item.storedAt,
+            jpeg: item.jpeg,
+            hash: item.hash || "",
+            amountCents: item.amountCents || 0,
+          };
         }),
         receipt: customer.receipts.length
           ? {
@@ -505,14 +511,87 @@ var Schmahl = (function () {
         write(state);
         return card(state, customer, when);
       },
-      saveReceipt: function (raw, jpeg) {
+      applyFactory: function (factory) {
+        if (!factory || typeof factory !== "object") return;
+        var company = factory.company || {};
+        if (company.name) SHOP.name = String(company.name);
+        if (company.street != null) SHOP.street = String(company.street);
+        if (company.district != null) SHOP.district = String(company.district);
+        if (company.postalCode != null) SHOP.postalCode = String(company.postalCode);
+        if (company.city != null) SHOP.city = String(company.city);
+        if (company.phone != null) {
+          SHOP.phone = String(company.phone);
+          var digits = SHOP.phone.replace(/[^\d+]/g, "");
+          SHOP.phoneHref = digits ? "tel:" + digits : SHOP.phoneHref;
+        }
+        var hours = String(company.hours || "").split(/\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+        if (hours.length) SHOP.hours = hours.slice(0, 4);
+        var items = factory.tiers && factory.tiers.items;
+        if (!Array.isArray(items) || !items.length) return;
+        var nextTiers = [];
+        var nextRates = {};
+        var nextBenefits = {};
+        items.forEach(function (item) {
+          var cents = Math.round(Number(item.amountEuro) * 100);
+          if (!cents || cents < 0) return;
+          nextTiers.push(cents);
+          nextRates[cents] = Math.round(Number(item.percent) || 0);
+          nextBenefits[cents] = String(item.text || "");
+        });
+        if (!nextTiers.length) return;
+        TIERS = nextTiers;
+        RATES = nextRates;
+        DEFAULT_BENEFITS = nextBenefits;
+        var state = read();
+        nextTiers.forEach(function (cents) {
+          state.benefits[String(cents)] = nextBenefits[cents];
+        });
+        write(state);
+      },
+      checkAmount: function (amount) {
+        return parseCents(amount);
+      },
+      bookReceipt: function (raw, amount, jpeg, hash) {
+        var state = read();
+        var customer = find(state, raw);
+        var cents = parseCents(amount);
+        var photo = cleanJpeg(jpeg);
+        var when = moment();
+        customer.purchases.push({
+          amountCents: cents,
+          bookedAt: when.iso,
+          year: when.year,
+          month: when.month,
+        });
+        var nextId = customer.receipts.reduce(function (max, item) {
+          return item.id > max ? item.id : max;
+        }, 0) + 1;
+        customer.receipts.push({
+          id: nextId,
+          storedAt: when.iso,
+          jpeg: photo,
+          hash: typeof hash === "string" ? hash : "",
+          amountCents: cents,
+        });
+        if (customer.receipts.length > 24) {
+          customer.receipts = customer.receipts.slice(customer.receipts.length - 24);
+        }
+        write(state);
+        return card(state, customer, when);
+      },
+      saveReceipt: function (raw, jpeg, hash) {
         var state = read();
         var customer = find(state, raw);
         var when = moment();
         var nextId = customer.receipts.reduce(function (max, item) {
           return item.id > max ? item.id : max;
         }, 0) + 1;
-        customer.receipts.push({ id: nextId, storedAt: when.iso, jpeg: cleanJpeg(jpeg) });
+        customer.receipts.push({
+          id: nextId,
+          storedAt: when.iso,
+          jpeg: cleanJpeg(jpeg),
+          hash: typeof hash === "string" ? hash : "",
+        });
         if (customer.receipts.length > 24) {
           customer.receipts = customer.receipts.slice(customer.receipts.length - 24);
         }

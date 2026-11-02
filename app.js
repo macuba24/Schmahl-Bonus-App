@@ -173,29 +173,53 @@ function act(note, button, work) {
   }
 }
 
+function tierShare(turnoverCents, tierCents) {
+  if (!tierCents) return 0;
+  var value = Math.round((turnoverCents || 0) * 100 / tierCents);
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return value;
+}
+
+function tierBar(item, turnoverCents, status, button) {
+  var value = tierShare(turnoverCents, item.tierCents);
+  var fill = el("div", { class: "step-fill" });
+  fill.style.width = value + "%";
+  var cls = "step" + (item.reached ? " reached" : "");
+  return el("article", {
+    class: cls,
+    role: "progressbar",
+    "aria-valuemin": "0",
+    "aria-valuemax": "100",
+    "aria-valuenow": String(value),
+    "aria-label": "ab " + item.label + ". " + item.text + (status ? ". " + status : ""),
+  }, [
+    fill,
+    el("div", { class: "step-copy" }, [
+      el("p", { class: "tier-label" }, "ab " + item.label),
+      el("p", { class: "step-rate" }, item.text),
+      status ? el("p", {}, status) : null,
+      button,
+    ]),
+  ]);
+}
+
 function bonusList(card, onRedeem) {
   return el("div", { class: "steps" }, card.benefits.map(function (item) {
-    var current = item.tierCents === card.reachedTierCents;
-    var cls = "step" + (item.reached ? " reached" : "") + (current ? " current" : "");
     var button = onRedeem && item.reached && !item.redeemed
       ? el("button", { type: "button", class: "quiet" }, "Als eingelöst markieren")
       : null;
     if (button) button.addEventListener("click", function () { onRedeem(item, button); });
-    return el("article", { class: cls }, [
-      el("p", { class: "tier-label" }, "ab " + item.label),
-      el("p", { class: "step-rate" }, item.text),
-      item.reached ? el("p", { class: "hint" }, item.redeemed ? "Eingelöst." : "Erreicht.") : null,
-      button,
-    ]);
+    var status = null;
+    if (item.reached) status = item.redeemed ? "Eingelöst." : "Erreicht.";
+    else if (item.tierCents === card.nextTierCents) status = "Noch " + euroWords(card.remainingCents) + ".";
+    return tierBar(item, card.turnoverCents, status, button);
   }));
 }
 
 function openBonusList() {
   return el("div", { class: "steps" }, store.shop().tiers.map(function (item) {
-    return el("article", { class: "step" }, [
-      el("p", { class: "tier-label" }, "ab " + item.label),
-      el("p", { class: "step-rate" }, item.text),
-    ]);
+    return tierBar(item, 0, null, null);
   }));
 }
 
@@ -215,9 +239,25 @@ function tierSentence(card) {
   return "Stufe " + (tier ? tier.label : euroWords(card.reachedTierCents)) + " erreicht.";
 }
 
+function factoryPart(key) {
+  var source = window.SCHMAHL_FACTORY;
+  return source && source[key] ? source[key] : null;
+}
+
+function factoryOn(key) {
+  var part = factoryPart(key);
+  return !part || part.enabled !== false;
+}
+
+function factoryText(key, field, fallback) {
+  var part = factoryPart(key);
+  var value = part && part[field] != null ? String(part[field]).trim() : "";
+  return value || fallback;
+}
+
 function nextSentence(card) {
-  if (card.nextTierCents == null) return "Die höchste Stufe ist erreicht.";
-  return "Noch " + euroWords(card.remainingCents) + " bis zur nächsten Stufe.";
+  if (card.nextTierCents == null) return factoryText("bonusBar", "topText", "Die höchste Stufe ist erreicht.");
+  return factoryText("bonusBar", "nextText", "Noch {betrag} bis zur nächsten Stufe.").replace(/\{betrag\}/g, euroWords(card.remainingCents));
 }
 
 function progressBar(card) {
@@ -246,27 +286,44 @@ function progressBar(card) {
 }
 
 function cardNodes(card, onRedeem) {
-  var box = el("div", { class: "barcode" });
-  box.append(barcodeSvg(card.kode || card.number));
-  return [
-    el("h3", {}, card.name),
-    card.address ? el("p", {}, card.address) : null,
-    el("p", { class: "tier-label" }, "Kundennummer"),
-    el("p", { class: "number", translate: "no" }, card.kundennummer || "—"),
-    el("p", { class: "tier-label" }, "Geburtstag"),
-    el("p", {}, birthdayText(card)),
-    el("p", { class: "tier-label" }, "Kunden-Code"),
-    el("p", { class: "number", translate: "no" }, card.kode || card.number),
-    box,
-    el("p", { class: "hint" }, "Diesen Kunden-Code an der Kasse zeigen. Falls sie nicht scannt, den Code nennen."),
-    el("p", {}, card.bonusCents
+  var nodes = [];
+  if (factoryOn("name")) nodes.push(el("h3", {}, card.name));
+  if (factoryOn("address") && card.address) nodes.push(el("p", {}, card.address));
+  if (factoryOn("customerNumber")) {
+    nodes.push(el("p", { class: "tier-label" }, factoryText("customerNumber", "label", "Kundennummer")));
+    nodes.push(el("p", { class: "number", translate: "no" }, card.kundennummer || "—"));
+  }
+  if (factoryOn("birthday")) {
+    nodes.push(el("p", { class: "tier-label" }, factoryText("birthday", "label", "Geburtstag")));
+    nodes.push(el("p", {}, birthdayText(card)));
+  }
+  if (factoryOn("customerCode")) {
+    var box = el("div", { class: "barcode" });
+    box.append(barcodeSvg(card.kode || card.number));
+    nodes.push(el("p", { class: "tier-label" }, "Kunden-Code"));
+    nodes.push(el("p", { class: "number", translate: "no" }, card.kode || card.number));
+    nodes.push(box);
+    nodes.push(el("p", { class: "hint" }, factoryText("customerCode", "hint", "Diesen Kunden-Code an der Kasse zeigen. Falls sie nicht scannt, den Code nennen.")));
+  }
+  if (factoryOn("bonusBar")) {
+    nodes.push(el("p", {}, card.bonusCents
       ? "Bonus " + card.bonusPercent + " Prozent: " + euro(card.bonusCents) + "."
-      : "Bonus ab 1.000 Euro: 1 Prozent auf den Einkauf."),
-    el("p", { class: "tier-label" }, "Jahresumsatz " + card.year),
-    el("p", { class: "figure" }, euro(card.turnoverCents)),
-    el("p", {}, tierSentence(card)),
-    el("h3", {}, "Bonusstufen"),
-  ].concat([bonusList(card, onRedeem)]);
+      : "Bonus ab 1.000 Euro: 1 Prozent auf den Einkauf."));
+  }
+  nodes.push(el("p", { class: "tier-label" }, "Jahresumsatz " + card.year));
+  nodes.push(el("p", { class: "figure" }, euro(card.turnoverCents)));
+  nodes.push(el("p", {}, tierSentence(card)));
+  if (factoryOn("tiers")) {
+    nodes.push(el("h3", {}, "Bonusstufen"));
+    nodes.push(bonusList(card, onRedeem));
+  }
+  return nodes;
+}
+
+function receiptMoney(item) {
+  if (item.amountCents) return " · " + euro(item.amountCents);
+  if (item.amount) return " · " + String(item.amount) + " Euro";
+  return "";
 }
 
 function receiptArchive(items) {
@@ -275,10 +332,38 @@ function receiptArchive(items) {
   return el("div", { class: "receipt-store" }, list.slice().reverse().map(function (item, index) {
     var label = item.storedAt ? stamp(item.storedAt) : "Noch nicht abgelegt";
     return el("figure", { class: "stored-receipt" }, [
-      el("figcaption", { class: "hint" }, "Rechnung " + (list.length - index) + (label ? " · " + label : "")),
-      el("img", { class: "shot", alt: "Gespeicherte Rechnung", src: item.jpeg }),
+      el("figcaption", { class: "hint" }, "Beleg " + (list.length - index) + (label ? " · " + label : "") + receiptMoney(item)),
+      el("img", { class: "shot", alt: "Gespeicherter Kassenbon", src: item.jpeg }),
     ]);
   }));
+}
+
+function receiptDraft(jpeg, onConfirm) {
+  var amount = el("input", {
+    type: "text",
+    inputmode: "decimal",
+    autocomplete: "off",
+    placeholder: "0,00",
+    "aria-label": "Betrag auf dem Kassenbon in Euro",
+  });
+  var note = el("p", { role: "status" });
+  var button = el("button", { type: "button" }, "Betrag buchen");
+  button.addEventListener("click", function () {
+    var cents = act(note, button, function () { return store.checkAmount(amount.value); });
+    if (!cents) return;
+    button.disabled = true;
+    claimReceipt(jpeg, note, function (hash) {
+      onConfirm(amount.value, hash, note, button);
+    });
+  });
+  return el("div", { class: "stack" }, [
+    el("p", { class: "hint" }, "Tragen Sie den Betrag vom Kassenbon ein. Das Foto bleibt als Beleg gespeichert."),
+    el("img", { class: "shot", alt: "Kassenbon", src: jpeg }),
+    el("label", {}, "Betrag auf dem Kassenbon in Euro"),
+    amount,
+    button,
+    note,
+  ]);
 }
 
 function readReceipt(file, onJpeg, note) {
@@ -319,10 +404,10 @@ function scanPicker(id, preview, onJpeg) {
     readReceipt(file, onJpeg, note);
   });
   return el("div", { class: "scan" }, [
-    el("h3", {}, "Rechnungsspeicher"),
-    el("p", { class: "hint" }, "Jede gescannte Rechnung bleibt auf diesem Handy. Der Betrag zählt, wenn die Kasse ihn bucht."),
+    el("h3", {}, factoryText("receipt", "title", "Rechnungsspeicher")),
+    el("p", { class: "hint" }, factoryText("receipt", "hint", "Fotografieren Sie den Kassenbon und tragen Sie den Betrag ein. Das Foto bleibt als Beleg gespeichert. Dieselbe Rechnung kann nicht ein zweites Mal zählen.")),
     preview,
-    el("label", { class: "scan-button", for: id }, "Rechnung scannen"),
+    el("label", { class: "scan-button", for: id }, factoryText("receipt", "buttonLabel", "Rechnung scannen")),
     input,
     note,
   ]);
@@ -332,19 +417,41 @@ function scanSection(card) {
   var preview = el("div");
   preview.append(receiptArchive(card.receipts));
   return scanPicker("rechnung-scan", preview, function (jpeg) {
-    var note = preview.parentNode.querySelector("[role='status']");
-    var updated = act(note, null, function () { return store.saveReceipt(card.number, jpeg); });
-    if (!updated) return;
-    note.className = "ok";
-    note.textContent = "Im Rechnungsspeicher.";
-    publishCard(updated);
+    preview.replaceChildren(receiptDraft(jpeg, function (amount, hash, note, button) {
+      var updated = act(note, button, function () {
+        return store.bookReceipt(card.number, amount, jpeg, hash);
+      });
+      if (!updated) return;
+      note.className = "ok";
+      note.textContent = "Gebucht. Der Kassenbon liegt als Beleg im Speicher.";
+      publishCard(updated);
+    }), receiptArchive(card.receipts));
+  });
+}
+
+function claimReceipt(jpeg, note, onOk) {
+  var claim = window.SchmahlClaim;
+  if (!claim) {
+    note.className = "error";
+    note.textContent = "Die Rechnung kann gerade nicht geprüft werden.";
+    return;
+  }
+  claim(jpeg).then(function (result) {
+    if (!result.ok) {
+      note.className = "error";
+      note.textContent = result.error;
+      var button = note.parentNode && note.parentNode.querySelector("button");
+      if (button) button.disabled = false;
+      return;
+    }
+    onOk(result.hash);
   });
 }
 
 function infoPrompt() {
   return el("div", { class: "info-ask" }, [
-    el("p", { class: "info-title" }, "INFO an Firma Schmahl"),
-    el("p", {}, "Was finden Sie gut, was finden Sie schlecht?"),
+    el("p", { class: "info-title" }, factoryText("feedback", "title", "INFO an Firma Schmahl")),
+    el("p", {}, factoryText("feedback", "prompt", "Was finden Sie gut, was finden Sie schlecht?")),
   ]);
 }
 
@@ -416,10 +523,12 @@ function draftMessage() {
 
 function renderCustomer(card) {
   paintLevel("kunde", card);
-  kunde.replaceChildren(el("h2", {}, "Kunde"), progressBar(card));
-  kunde.append(messageSection(card, "kunde"));
+  var nodes = [el("h2", {}, "Kunde")];
+  if (factoryOn("bonusBar")) nodes.push(progressBar(card));
+  kunde.replaceChildren.apply(kunde, nodes);
+  if (factoryOn("feedback")) kunde.append(messageSection(card, "kunde"));
   cardNodes(card, null).forEach(function (node) { kunde.append(node); });
-  kunde.append(scanSection(card));
+  if (factoryOn("receipt")) kunde.append(scanSection(card));
 }
 
 function renderNameForm(message) {
@@ -463,25 +572,55 @@ function renderNameForm(message) {
     "aria-label": "Monat",
   });
   var note = el("p", { class: "error", role: "alert" }, message || "");
-  var button = el("button", { type: "submit" }, "Kunden-Code erzeugen");
+  var button = el("button", { type: "submit" }, factoryText("customerCode", "label", "Kunden-Code erzeugen"));
+  var formFields = [];
+  if (factoryOn("name")) {
+    formFields.push(el("label", { for: "customer-name" }, factoryText("name", "label", "Name")), nameInput);
+  }
+  if (factoryOn("address")) {
+    formFields.push(el("label", { for: "customer-address" }, factoryText("address", "label", "Adresse")), addressInput);
+  }
+  if (factoryOn("birthday")) {
+    formFields.push(
+      el("p", { class: "tier-label" }, factoryText("birthday", "label", "Geburtstag")),
+      el("div", { class: "birthday" }, [
+        el("div", {}, [
+          el("label", { for: "customer-birthday-day" }, "Tag"),
+          dayInput,
+        ]),
+        el("div", {}, [
+          el("label", { for: "customer-birthday-month" }, "Monat"),
+          monthInput,
+        ]),
+      ])
+    );
+  }
+  if (factoryOn("customerNumber")) {
+    formFields.push(el("label", { for: "customer-number-given" }, factoryText("customerNumber", "label", "Kundennummer")), numberInput);
+  }
+  if (factoryOn("customerCode")) {
+    formFields.push(el("p", { class: "hint" }, factoryText("customerCode", "hint", "Danach entsteht der Kunden-Code. Er bleibt auf diesem Handy.")), button);
+  }
+  formFields.push(note);
   var form = el("form", {
     class: "stack",
     onsubmit: function (event) {
       event.preventDefault();
+      if (!factoryOn("customerCode")) return;
       var created = act(note, button, function () {
         return store.createCustomer({
-          name: nameInput.value,
-          address: addressInput.value,
-          kundennummer: numberInput.value,
-          birthdayDay: dayInput.value,
-          birthdayMonth: monthInput.value,
+          name: factoryOn("name") ? nameInput.value : "Kunde",
+          address: factoryOn("address") ? addressInput.value : "—",
+          kundennummer: factoryOn("customerNumber") ? numberInput.value : ("AUTO" + Date.now().toString(36).slice(-6).toUpperCase()),
+          birthdayDay: factoryOn("birthday") ? dayInput.value : "1",
+          birthdayMonth: factoryOn("birthday") ? monthInput.value : "1",
         });
       });
       if (!created) return;
       if (pendingReceipts.length) {
         try {
-          pendingReceipts.forEach(function (jpeg) {
-            created = store.saveReceipt(created.number, jpeg);
+          pendingReceipts.forEach(function (item) {
+            created = store.bookReceipt(created.number, item.amount, item.jpeg || item, item.hash || "");
           });
         } catch (error) {
           note.className = "error";
@@ -500,48 +639,38 @@ function renderNameForm(message) {
       }
       renderCustomer(created);
     },
-  }, [
-    el("label", { for: "customer-name" }, "Name"),
-    nameInput,
-    el("label", { for: "customer-address" }, "Adresse"),
-    addressInput,
-    el("p", { class: "tier-label" }, "Geburtstag"),
-    el("div", { class: "birthday" }, [
-      el("div", {}, [
-        el("label", { for: "customer-birthday-day" }, "Tag"),
-        dayInput,
-      ]),
-      el("div", {}, [
-        el("label", { for: "customer-birthday-month" }, "Monat"),
-        monthInput,
-      ]),
-    ]),
-    el("label", { for: "customer-number-given" }, "Kundennummer"),
-    numberInput,
-    el("p", { class: "hint" }, "Danach entsteht der Kunden-Code. Er bleibt auf diesem Handy."),
-    button,
-    note,
-  ]);
+  }, formFields);
   var preview = el("div");
   preview.append(receiptArchive(pendingReceipts));
   paintLevel("kunde", null);
-  kunde.replaceChildren(
-    el("h2", {}, "Kunde"),
-    progressBar({
+  var firstTier = store.shop().tiers[0];
+  var firstCents = firstTier ? firstTier.tierCents : 100000;
+  var openNodes = [el("h2", {}, "Kunde")];
+  if (factoryOn("bonusBar")) {
+    openNodes.push(progressBar({
       turnoverCents: 0,
       reachedTierCents: null,
-      nextTierCents: 100000,
-      remainingCents: 100000,
-    }),
-    el("h3", {}, "Bonusstufen"),
-    openBonusList(),
-    form,
-    scanPicker("rechnung-neu", preview, function (jpeg) {
-      pendingReceipts.push({ jpeg: jpeg });
-      preview.replaceChildren(receiptArchive(pendingReceipts));
-    }),
-    draftMessage()
-  );
+      nextTierCents: firstCents,
+      remainingCents: firstCents,
+    }));
+  }
+  if (factoryOn("tiers")) {
+    openNodes.push(el("h3", {}, "Bonusstufen"), openBonusList());
+  }
+  openNodes.push(form);
+  if (factoryOn("receipt")) {
+    openNodes.push(scanPicker("rechnung-neu", preview, function (jpeg) {
+      preview.replaceChildren(receiptDraft(jpeg, function (amount, hash) {
+        pendingReceipts.push({ jpeg: jpeg, hash: hash, amount: amount });
+        preview.replaceChildren(
+          el("p", { class: "ok", role: "status" }, "Betrag vorgemerkt. Der Bon wird mit dem Kunden-Code abgelegt."),
+          receiptArchive(pendingReceipts),
+        );
+      }), receiptArchive(pendingReceipts));
+    }));
+  }
+  if (factoryOn("feedback")) openNodes.push(draftMessage());
+  kunde.replaceChildren.apply(kunde, openNodes);
 }
 
 function renderKasseCard(card) {
@@ -553,10 +682,12 @@ function renderKasseCard(card) {
     });
     if (updated) showOnKasse(updated);
   });
-  nodes.unshift(progressBar(card));
-  nodes.push(el("h3", {}, "Rechnungsspeicher"));
-  nodes.push(receiptArchive(card.receipts));
-  nodes.push(messageSection(card, "firma"));
+  if (factoryOn("bonusBar")) nodes.unshift(progressBar(card));
+  if (factoryOn("receipt")) {
+    nodes.push(el("h3", {}, factoryText("receipt", "title", "Rechnungsspeicher")));
+    nodes.push(receiptArchive(card.receipts));
+  }
+  if (factoryOn("feedback")) nodes.push(messageSection(card, "firma"));
   kasseResult.replaceChildren.apply(kasseResult, nodes);
 }
 
@@ -607,14 +738,29 @@ function applyLevel(view) {
 }
 
 function renderShop(shop) {
+  var home = document.querySelector(".homepage");
+  if (home) {
+    home.hidden = !factoryOn("homepage");
+    var link = home.querySelector("a");
+    if (link) {
+      link.textContent = factoryText("homepage", "label", "Homepage");
+      var href = factoryText("homepage", "url", "");
+      if (href) link.href = href;
+    }
+  }
+  if (!factoryOn("company")) {
+    shopLines.replaceChildren();
+    return;
+  }
+  var hours = shop.hours || [];
   shopLines.replaceChildren(
     el("p", {}, shop.name),
-    el("p", {}, shop.street),
-    el("p", {}, shop.district),
-    el("p", {}, shop.postalCode + " " + shop.city),
-    el("p", {}, el("a", { class: "call", href: shop.phoneHref }, shop.phone)),
-    el("p", {}, shop.hours[0]),
-    el("p", {}, shop.hours[1])
+    shop.street ? el("p", {}, shop.street) : null,
+    shop.district ? el("p", {}, shop.district) : null,
+    el("p", {}, [shop.postalCode, shop.city].filter(Boolean).join(" ")),
+    shop.phone ? el("p", {}, el("a", { class: "call", href: shop.phoneHref }, shop.phone)) : null,
+    hours[0] ? el("p", {}, hours[0]) : null,
+    hours[1] ? el("p", {}, hours[1]) : null
   );
 }
 
@@ -856,5 +1002,19 @@ function start() {
     kunde.replaceChildren(el("h2", {}, "Kunde"), el("p", { class: "error" }, error.message));
   }
 }
+
+window.SchmahlLive = {
+  apply: function (factory) {
+    window.SCHMAHL_FACTORY = factory || {};
+    if (store.applyFactory) store.applyFactory(factory);
+    try {
+      var shop = store.shop();
+      document.title = "Kundenapp " + shop.wordmark;
+      renderShop(shop);
+      buildKasse(shop);
+      loadLocalCustomer();
+    } catch (error) { /* Die letzte gute Ansicht bleibt. */ }
+  },
+};
 
 start();
