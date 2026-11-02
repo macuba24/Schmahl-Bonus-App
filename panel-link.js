@@ -290,6 +290,46 @@
     return output;
   }
 
+  function pushReady(button, hint) {
+    hint.textContent = "Dieses Handy empfängt Mitteilungen, auch wenn die App zu ist.";
+    button.hidden = true;
+  }
+
+  function currentPushSubscription() {
+    if (!("serviceWorker" in navigator)) return Promise.resolve(null);
+    return navigator.serviceWorker.ready.then(function (registration) {
+      return registration.pushManager.getSubscription();
+    });
+  }
+
+  function storePushSubscription(subscription) {
+    return fetch(ORIGIN + "/api/v1/push/subscriptions/" + encodeURIComponent(SLUG), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(subscription),
+    }).then(function (response) {
+      if (!response.ok) throw new Error("save");
+      return subscription;
+    });
+  }
+
+  function subscribeForPush() {
+    return currentPushSubscription().then(function (existing) {
+      if (existing) return existing;
+      return fetch(ORIGIN + "/api/v1/push/public-key", { cache: "no-store" })
+        .then(function (response) { return response.json(); })
+        .then(function (payload) {
+          if (!payload.publicKey) throw new Error("key");
+          return navigator.serviceWorker.ready.then(function (registration) {
+            return registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(payload.publicKey),
+            });
+          });
+        });
+    });
+  }
+
   function pushOptIn(push) {
     var box = benefit(push.title || "Mitteilungen", push.message || "Erlauben Sie Mitteilungen für dieses Handy.");
     var button = document.createElement("button");
@@ -303,43 +343,43 @@
     } else if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       button.disabled = true;
       hint.textContent = "Dieser Browser kann keine Mitteilungen auf dem Sperrbildschirm zeigen.";
+    } else if (Notification.permission === "granted") {
+      button.hidden = true;
+      hint.textContent = "Die Erlaubnis bleibt auf diesem Handy gespeichert.";
+      currentPushSubscription().then(function (existing) {
+        if (!existing) {
+          button.hidden = false;
+          hint.textContent = "";
+          return null;
+        }
+        pushReady(button, hint);
+        return storePushSubscription(existing);
+      }).catch(function () {
+        button.hidden = false;
+        hint.textContent = "";
+      });
+    } else if (Notification.permission === "denied") {
+      button.disabled = true;
+      hint.textContent = "Die Erlaubnis ist in den Browser-Einstellungen ausgeschaltet.";
     }
     button.addEventListener("click", function () {
       button.disabled = true;
-      hint.textContent = "Bitte die Anfrage des Handys bestätigen.";
-      Notification.requestPermission().then(function (permission) {
+      var ask = Notification.permission === "granted"
+        ? Promise.resolve("granted")
+        : Notification.requestPermission();
+      ask.then(function (permission) {
         if (permission !== "granted") {
           hint.textContent = "Ohne Erlaubnis bleibt der Sperrbildschirm leer.";
           button.disabled = false;
           return null;
         }
-        return fetch(ORIGIN + "/api/v1/push/public-key", { cache: "no-store" })
-          .then(function (response) { return response.json(); })
-          .then(function (payload) {
-            if (!payload.publicKey) throw new Error("key");
-            return navigator.serviceWorker.ready.then(function (registration) {
-              return registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(payload.publicKey),
-              });
-            });
-          })
-          .then(function (subscription) {
-            return fetch(ORIGIN + "/api/v1/push/subscriptions/" + encodeURIComponent(SLUG), {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(subscription),
-            });
-          })
-          .then(function (response) {
-            if (!response.ok) throw new Error("save");
-            hint.textContent = "Dieses Handy empfängt Mitteilungen, auch wenn die App zu ist.";
-            button.hidden = true;
-          })
-          .catch(function () {
-            hint.textContent = "Die Erlaubnis ist fehlgeschlagen. Auf dem iPhone muss die App auf dem Home-Bildschirm liegen.";
-            button.disabled = false;
-          });
+        hint.textContent = "Die Erlaubnis bleibt auf diesem Handy gespeichert.";
+        return subscribeForPush()
+          .then(storePushSubscription)
+          .then(function () { pushReady(button, hint); });
+      }).catch(function () {
+        hint.textContent = "Die Erlaubnis ist fehlgeschlagen. Auf dem iPhone muss die App auf dem Home-Bildschirm liegen.";
+        button.disabled = false;
       });
     });
     box.appendChild(button);
