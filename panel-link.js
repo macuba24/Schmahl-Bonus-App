@@ -469,9 +469,6 @@
         }
         return cards;
       },
-      directFeedback: function () {
-        return [benefit("Ihre Meinung", source.directFeedback.question || "")];
-      },
       quickPoll: function () {
         return [
           benefit(
