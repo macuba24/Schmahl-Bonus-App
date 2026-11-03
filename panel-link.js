@@ -297,14 +297,24 @@
     hint.textContent = "";
   }
 
-  function currentPushSubscription() {
+  function currentPushRegistration() {
     if (!("serviceWorker" in navigator)) return Promise.resolve(null);
-    return navigator.serviceWorker.ready.then(function (registration) {
-      return registration.pushManager.getSubscription();
+    return navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      return Promise.all(registrations.map(function (registration) {
+        var worker = registration.active || registration.waiting || registration.installing;
+        var script = worker ? worker.scriptURL : "";
+        if (script.indexOf("sw.js?") !== -1) return registration.unregister();
+        return null;
+      }));
+    }).then(function () {
+      return navigator.serviceWorker.register("sw.js");
+    }).then(function (registration) {
+      return navigator.serviceWorker.ready.then(function () { return registration; });
     });
   }
 
   function storePushSubscription(subscription) {
+    if (!subscription || !subscription.endpoint) throw new Error("save");
     return fetch(ORIGIN + "/api/v1/push/subscriptions/" + encodeURIComponent(SLUG), {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -316,20 +326,21 @@
   }
 
   function subscribeForPush() {
-    return currentPushSubscription().then(function (existing) {
-      if (existing) return existing;
-      return fetch(ORIGIN + "/api/v1/push/public-key", { cache: "no-store" })
-        .then(function (response) { return response.json(); })
-        .then(function (payload) {
-          if (!payload.publicKey) throw new Error("key");
-          return navigator.serviceWorker.ready.then(function (registration) {
+    return currentPushRegistration().then(function (registration) {
+      if (!registration) throw new Error("worker");
+      return registration.pushManager.getSubscription().then(function (existing) {
+        if (existing) return existing;
+        return fetch(ORIGIN + "/api/v1/push/public-key", { cache: "no-store" })
+          .then(function (response) { return response.json(); })
+          .then(function (payload) {
+            if (!payload.publicKey) throw new Error("key");
             return registration.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(payload.publicKey),
             });
           });
-        });
-    });
+      });
+    }).then(storePushSubscription);
   }
 
   function pushOptIn() {
@@ -349,18 +360,13 @@
       box.hidden = true;
       button.hidden = true;
       hint.hidden = true;
-      currentPushSubscription().then(function (existing) {
-        if (!existing) {
-          box.hidden = false;
-          button.hidden = false;
-          hint.textContent = "";
-          return null;
-        }
+      subscribeForPush().then(function () {
         pushReady(box, button, hint);
-        return storePushSubscription(existing);
       }).catch(function () {
         box.hidden = false;
         button.hidden = false;
+        button.disabled = false;
+        hint.hidden = false;
         hint.textContent = "";
       });
     } else if (Notification.permission === "denied") {
