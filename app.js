@@ -967,7 +967,9 @@ function bindInstallAsk() {
     hideInstallAsk(true);
   });
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(function () {});
+    navigator.serviceWorker.register("sw.js?v=push-sofort").then(function (registration) {
+      return registration.update();
+    }).catch(function () {});
   }
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().catch(function () {});

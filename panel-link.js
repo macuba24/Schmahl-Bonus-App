@@ -290,9 +290,11 @@
     return output;
   }
 
-  function pushReady(button, hint) {
-    hint.textContent = "Dieses Handy empfängt Mitteilungen, auch wenn die App zu ist.";
+  function pushReady(box, button, hint) {
+    box.hidden = true;
     button.hidden = true;
+    hint.hidden = true;
+    hint.textContent = "";
   }
 
   function currentPushSubscription() {
@@ -330,8 +332,8 @@
     });
   }
 
-  function pushOptIn(push) {
-    var box = benefit(push.title || "Mitteilungen", push.message || "Erlauben Sie Mitteilungen für dieses Handy.");
+  function pushOptIn() {
+    var box = benefit("Mitteilungen", "Erlauben Sie Mitteilungen für dieses Handy.");
     var button = document.createElement("button");
     button.type = "button";
     button.textContent = "Mitteilungen auf diesem Handy erlauben";
@@ -344,17 +346,20 @@
       button.disabled = true;
       hint.textContent = "Dieser Browser kann keine Mitteilungen auf dem Sperrbildschirm zeigen.";
     } else if (Notification.permission === "granted") {
+      box.hidden = true;
       button.hidden = true;
-      hint.textContent = "Die Erlaubnis bleibt auf diesem Handy gespeichert.";
+      hint.hidden = true;
       currentPushSubscription().then(function (existing) {
         if (!existing) {
+          box.hidden = false;
           button.hidden = false;
           hint.textContent = "";
           return null;
         }
-        pushReady(button, hint);
+        pushReady(box, button, hint);
         return storePushSubscription(existing);
       }).catch(function () {
+        box.hidden = false;
         button.hidden = false;
         hint.textContent = "";
       });
@@ -373,11 +378,12 @@
           button.disabled = false;
           return null;
         }
-        hint.textContent = "Die Erlaubnis bleibt auf diesem Handy gespeichert.";
+        hint.hidden = true;
         return subscribeForPush()
           .then(storePushSubscription)
-          .then(function () { pushReady(button, hint); });
+          .then(function () { pushReady(box, button, hint); });
       }).catch(function () {
+        hint.hidden = false;
         hint.textContent = "Die Erlaubnis ist fehlgeschlagen. Auf dem iPhone muss die App auf dem Home-Bildschirm liegen.";
         button.disabled = false;
       });

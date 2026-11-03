@@ -6,12 +6,6 @@ self.addEventListener("activate", function (event) {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener("fetch", function (event) {
-  if (event.request.method !== "GET") return;
-  if (event.request.url.indexOf("http") !== 0) return;
-  event.respondWith(fetch(event.request));
-});
-
 self.addEventListener("push", function (event) {
   var payload = {};
   try {
@@ -22,7 +16,11 @@ self.addEventListener("push", function (event) {
   var title = payload.title || "Nachricht";
   var options = {
     body: payload.message || "",
+    icon: "icon-192.png",
+    badge: "icon-192.png",
     data: { url: payload.url || "./" },
+    tag: "schmahl-mitteilung",
+    renotify: true,
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
